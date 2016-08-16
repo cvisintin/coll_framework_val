@@ -1,11 +1,24 @@
+require("data.table")
+require("doMC")
+require("maptools")
+require("reshape2")
+require("rgeos")
+require("RPostgreSQL")
+require("raster")
+
 drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
 con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
 
 egk_risk.rds <- as.data.table(dbGetQuery(con,"
        SELECT 
-        r.id, ST_Length(r.geom)/1000 AS rdlength, r.egkrisk AS collrisk
+        r.uid, ST_Length(r.geom)/1000 AS rdlength, r.egkrisk AS collrisk
        FROM
-        gis_victoria.vic_gda9455_roads_state as r, gis_victoria.vic_gda9455_admin_sla AS p
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state as x, gis_victoria.vic_nogeom_roads_6spcollrisk as y
+        WHERE
+          x.uid = y.uid) as r, gis_victoria.vic_gda9455_admin_sla AS p
        WHERE
         ST_Contains(p.geom, r.geom)
        AND
@@ -47,7 +60,7 @@ egk_risk.rds <- as.data.table(dbGetQuery(con,"
         OR
         p.sla_code11 = '235101674');
     "))
-setkey(egk_risk.rds,id)
+setkey(egk_risk.rds,uid)
 
 # dbGetQuery(con,"
 #   CREATE TABLE gis_victoria.vic_gda9455_fauna_egkcoll_western_onnetwork (id serial, date character varying, x double precision, y double precision, distance double precision);
@@ -70,17 +83,22 @@ setkey(egk_risk.rds,id)
 
 egk_coll.rds <- as.data.table(dbGetQuery(con,"
     SELECT
-      r.id AS id, COUNT(p.id) AS ncoll
+      r.uid AS uid, COUNT(p.id) AS ncoll
     FROM
-      gis_victoria.vic_gda9455_roads_state as r, gis_victoria.vic_gda9455_fauna_egkcoll_western_onnetwork AS p
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state as x, gis_victoria.vic_nogeom_roads_6spcollrisk as y
+        WHERE
+          x.uid = y.uid) as r, gis_victoria.vic_gda9455_fauna_egkcoll_western_onnetwork AS p
     WHERE
       ST_DWithin(r.geom, p.geom, .0001)
     GROUP BY
-      r.id;
+      r.uid;
     "))
-setkey(egk_coll.rds,id)
+setkey(egk_coll.rds,uid)
 
-val.data <- merge(egk_risk.rds,egk_coll.rds, by="id", all.x=TRUE)
+val.data <- merge(egk_risk.rds,egk_coll.rds, by="uid", all.x=TRUE)
 val.data$ncoll[is.na(val.data$ncoll)] <- 0
 
 val.data <- na.omit(val.data)
