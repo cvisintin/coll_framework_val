@@ -46,11 +46,9 @@ plot(model.data.sla$ncoll/sum(model.data.sla$ncoll),model.data.sla$collrisk)
 
 model.sla <- glm(formula=ncoll~log(collrisk), data=model.data.sla, family=poisson)
 
-log(y) = a + b*log(p)
-
-y = e^a*p^b
-
-model.sla <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=model.data.sla, family=poisson)
+#log(y) = a + b*log(p)
+#y = e^a*p^b
+#model.sla <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=model.data.sla, family=poisson)
 
 summary(model.sla)
 
@@ -84,7 +82,10 @@ model.data.towns$ncoll[is.na(model.data.towns$ncoll)] <- 0
 
 no.match <- model.data.towns[is.na(rdlength),]
 
-model.towns <- glm(formula=ncoll~collrisk + log(rdlength), data=model.data.towns, family=poisson)
+model.data.towns <- na.omit(model.data.towns)
+plot(model.data.towns$ncoll/sum(model.data.towns$ncoll),model.data.towns$collrisk)
+
+model.towns <- glm(formula=ncoll ~ log(collrisk), data=model.data.towns, family=poisson)
 
 summary(model.towns)
 
