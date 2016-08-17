@@ -1,8 +1,8 @@
-require("rgdal")
-require("rgeos")
-require("maptools")
-require("sp")
-require("data.table")
+require(rgdal)
+require(rgeos)
+require(maptools)
+require(sp)
+require(data.table)
 
 carcass.raw.data <- as.data.table(read.delim("data/Asset_Vision_Pavement_Cleaning.csv", header=T, sep=","))
 
