@@ -25,9 +25,9 @@ egk_risk.sla <- as.data.table(dbGetQuery(con,"
         (SELECT
           x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
         FROM
-          gis_victoria.vic_gda9455_roads_state as x, gis_victoria.vic_nogeom_roads_6spcollrisk as y
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_6spcollrisk AS y
         WHERE
-          x.uid = y.uid) as r, gis_victoria.vic_gda9455_admin_sla AS p
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_sla AS p
       WHERE
         ST_Contains(p.geom, r.geom)
       GROUP BY
@@ -67,9 +67,9 @@ egk_risk.towns <- as.data.table(dbGetQuery(con,"
         (SELECT
           x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
         FROM
-          gis_victoria.vic_gda9455_roads_state as x, gis_victoria.vic_nogeom_roads_6spcollrisk as y
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_6spcollrisk AS y
         WHERE
-          x.uid = y.uid) as r, gis_victoria.vic_gda9455_admin_suburbs AS p
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_suburbs AS p
       WHERE
         ST_Contains(p.geom, r.geom)
       GROUP BY

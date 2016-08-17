@@ -17,9 +17,9 @@ deer_risk.rds <- as.data.table(dbGetQuery(con,"
         (SELECT
           x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
         FROM
-          gis_california.cal_nad8310_roads_study as x, gis_california.cal_nogeom_roads_deercollrisk as y
+          gis_california.cal_nad8310_roads_study AS x, gis_california.cal_nogeom_roads_deercollrisk AS y
         WHERE
-          x.uid = y.uid) as r, gis_california.cal_nad8310_admin_study_area AS p
+          x.uid = y.uid) AS r, gis_california.cal_nad8310_admin_study_area AS p
        WHERE
         ST_Contains(p.geom, r.geom);
     "))
@@ -51,17 +51,25 @@ deer_coll.rds <- as.data.table(dbGetQuery(con,"
         (SELECT
           x.uid AS uid, x.geom AS geom, y.collrisk AS deerrisk
         FROM
-          gis_california.cal_nad8310_roads_study as x, gis_california.cal_nogeom_roads_deercollrisk as y
+          gis_california.cal_nad8310_roads_study AS x, gis_california.cal_nogeom_roads_deercollrisk AS y
         WHERE
-          x.uid = y.uid) as r, gis_california.vic_gda9455_fauna_egkcoll_western_onnetwork AS p
+          x.uid = y.uid) AS r, 
+        (SELECT DISTINCT ON (p.id)
+          p.id AS id, ST_ClosestPoint(r.geom, p.geom) AS geom
+        FROM
+          gis_california.cal_nad8310_roads_study AS r, gis_california.cal_nad8310_fauna_caltrans AS p
+        WHERE
+          ST_DWithin(r.geom, p.geom, 10)
+        AND
+          species = 'Deer') AS p
     WHERE
       ST_DWithin(r.geom, p.geom, .0001)
     GROUP BY
       r.uid;
     "))
-setkey(egk_coll.rds,uid)
+setkey(deer_coll.rds,uid)
 
-val.data <- merge(egk_risk.rds,egk_coll.rds, by="uid", all.x=TRUE)
+val.data <- merge(deer_risk.rds,deer_coll.rds, by="uid", all.x=TRUE)
 val.data$ncoll[is.na(val.data$ncoll)] <- 0
 
 val.data <- na.omit(val.data)
