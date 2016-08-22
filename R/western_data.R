@@ -88,11 +88,15 @@ egk_coll.rds <- as.data.table(dbGetQuery(con,"
       r.uid AS uid, COUNT(p.id) AS ncoll
     FROM
         (SELECT
-          x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
+          uid, geom
         FROM
-          gis_victoria.vic_gda9455_roads_state as x, gis_victoria.vic_nogeom_roads_6spcollrisk as y
+          gis_victoria.vic_gda9455_roads_state) AS r, 
+        (SELECT DISTINCT ON (p.id)
+          p.id AS id, ST_ClosestPoint(x.geom, p.geom) AS geom
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_gda9455_fauna_egk_westerndist AS p
         WHERE
-          x.uid = y.uid) as r, gis_victoria.vic_gda9455_fauna_egkcoll_western_onnetwork AS p
+          ST_DWithin(x.geom, p.geom, 5)) AS p
     WHERE
       ST_DWithin(r.geom, p.geom, .0001)
     GROUP BY
