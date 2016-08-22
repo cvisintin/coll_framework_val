@@ -6,6 +6,7 @@ require(rgeos)
 require(RPostgreSQL)
 require(raster)
 require(MASS)
+require(vcd)
 
 drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
 con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
@@ -61,7 +62,9 @@ deer_coll.rds <- as.data.table(dbGetQuery(con,"
         WHERE
           ST_DWithin(r.geom, p.geom, 10)
         AND
-          species = 'Deer') AS p
+          species = 'Deer'
+        AND
+          year >= 2000) AS p
     WHERE
       ST_DWithin(r.geom, p.geom, .0001)
     GROUP BY
@@ -74,6 +77,9 @@ val.data$ncoll[is.na(val.data$ncoll)] <- 0
 
 val.data <- na.omit(val.data)
 
+distplot(val.data$ncoll, type="poisson")
+distplot(val.data$ncoll, type="nbinomial")
+
 #model <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=val.data, family=poisson)
 
 model <- glm(formula=ncoll ~ log(collrisk), data=val.data, family=poisson)
@@ -82,15 +88,9 @@ summary(model)
 
 paste("% Deviance Explained: ",round(((model$null.deviance - model$deviance)/model$null.deviance)*100,2),sep="")  #Report reduction in deviance
 
-#model.nb <- glm.nb(formula=ncoll ~ log(collrisk), data=val.data)
-#summary(model.nb)
-#paste("% Deviance Explained: ",round(((model.nb$null.deviance - model.nb$deviance)/model.nb$null.deviance)*100,2),sep="")  #Report reduction in deviance
+model.nb <- glm.nb(formula=ncoll ~ log(collrisk), data=val.data)
+summary(model.nb)
+paste("% Deviance Explained: ",round(((model.nb$null.deviance - model.nb$deviance)/model.nb$null.deviance)*100,2),sep="")  #Report reduction in deviance
 
-#val.data2 <- val.data
-#val.data2$ncoll[val.data2$ncoll >=1] <- 1
-
-#model.bin <- glm(formula=ncoll~log(collrisk/(1-collrisk)), data=rbind(val.data2[val.data2$ncoll==1],val.data2[sample(nrow(val.data2[val.data2$ncoll==0]),1000,replace=FALSE), ]), family=binomial)
-
-#summary(model.bin)
-
-#paste("% Deviance Explained: ",round(((model.bin$null.deviance - model.bin$deviance)/model.bin$null.deviance)*100,2),sep="")  #Report reduction in deviance
+plot(val.data$ncoll, exp(model.nb$coefficients[1]+model.nb$coefficients[2]*log(val.data$collrisk)),xlab="Observed Number of Collisions",ylab="Expected Number of Collisions")
+abline(a=0,b=1,lty=2,col="red")
