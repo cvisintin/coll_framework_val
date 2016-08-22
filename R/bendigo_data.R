@@ -24,44 +24,19 @@ egk_risk.rds <- as.data.table(dbGetQuery(con,"
        WHERE
         ST_Contains(p.geom, r.geom)
        AND
-        (p.sla_code11 = '202011019'
+        (p.sla_code11 = '235052621'
         OR
-        p.sla_code11 = '202011020'
+        p.sla_code11 = '235052622'
         OR
-        p.sla_code11 = '202011021'
+        p.sla_code11 = '235052623'
         OR
-        p.sla_code11 = '202011022'
+        p.sla_code11 = '235052624'
         OR
-        p.sla_code11 = '202011023'
+        p.sla_code11 = '235052625'
         OR
-        p.sla_code11 = '202011024'
-        OR
-        p.sla_code11 = '202011025'
-        OR
-        p.sla_code11 = '202021026'
-        OR
-        p.sla_code11 = '202031032');
+        p.sla_code11 = '235052626');
     "))
 setkey(egk_risk.rds,uid)
-
-# dbGetQuery(con,"
-#   CREATE TABLE gis_victoria.vic_gda9455_fauna_egkcoll_western_onnetwork (id serial, date character varying, x double precision, y double precision, distance double precision);
-#   SELECT AddGeometryColumn('gis_victoria', 'vic_gda9455_fauna_egkcoll_western_onnetwork','geom',28355,'POINT',2);
-#   ")
-# dbGetQuery(con,"
-#   INSERT INTO
-#     gis_victoria.vic_gda9455_fauna_egkcoll_western_onnetwork (date, x, y, distance, geom)
-#   SELECT DISTINCT ON (p.id)
-#     p.crtd_dt AS date, ST_X(ST_AsText(ST_ClosestPoint(l.geom,p.geom))) AS x, ST_Y(ST_AsText(ST_ClosestPoint(l.geom,p.geom))) AS y, min(ST_Distance(l.geom, p.geom)) AS distance, ST_ClosestPoint(l.geom,p.geom) AS geom
-#   FROM
-#     gis_victoria.vic_gda9455_roads_state AS l, gis_victoria.vic_gda9455_fauna_egk_westerndist AS p
-#   WHERE
-#     ST_DWithin(l.geom, p.geom, 20.0)
-#   GROUP BY
-#     p.id, l.id
-#   ORDER BY
-#     p.id, distance
-#   ")
 
 egk_coll.rds <- as.data.table(dbGetQuery(con,"
     SELECT
@@ -76,7 +51,7 @@ egk_coll.rds <- as.data.table(dbGetQuery(con,"
         FROM
           gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_gda9455_fauna_egk_bendigo AS p
         WHERE
-          ST_DWithin(x.geom, p.geom, 50)) AS p
+          ST_DWithin(x.geom, p.geom, 60)) AS p
     WHERE
       ST_DWithin(r.geom, p.geom, .0001)
     GROUP BY
