@@ -50,17 +50,15 @@ deer_coll.rds <- as.data.table(dbGetQuery(con,"
       r.uid AS uid, COUNT(p.id) AS ncoll
     FROM
         (SELECT
-          x.uid AS uid, x.geom AS geom, y.collrisk AS deerrisk
+          uid, geom
         FROM
-          gis_california.cal_nad8310_roads_study AS x, gis_california.cal_nogeom_roads_deercollrisk AS y
-        WHERE
-          x.uid = y.uid) AS r, 
+          gis_california.cal_nad8310_roads_study) AS r, 
         (SELECT DISTINCT ON (p.id)
-          p.id AS id, ST_ClosestPoint(r.geom, p.geom) AS geom
+          p.id AS id, ST_ClosestPoint(x.geom, p.geom) AS geom
         FROM
-          gis_california.cal_nad8310_roads_study AS r, gis_california.cal_nad8310_fauna_caltrans AS p
+          gis_california.cal_nad8310_roads_study AS x, gis_california.cal_nad8310_fauna_caltrans AS p
         WHERE
-          ST_DWithin(r.geom, p.geom, 10)
+          ST_DWithin(x.geom, p.geom, 50)
         AND
           species = 'Deer'
         AND
