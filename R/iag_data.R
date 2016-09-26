@@ -52,7 +52,7 @@ distplot(model.data.sla$ncoll, type="nbinomial")
 model.sla <- glm(formula=ncoll ~ log(collrisk), data=model.data.sla, family=poisson)
 
 #log(y) = a + b*log(p)
-#y = e^a*p^b
+#y = a*p^b
 #model.sla <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=model.data.sla, family=poisson)
 
 summary(model.sla)
@@ -76,23 +76,25 @@ setkey(data.towns,towns)
 
 egk_risk.towns <- as.data.table(dbGetQuery(con,"
       SELECT 
-        p.name_u as towns, SUM(ST_Length(r.geom))/1000 AS rdlength, AVG(r.egkrisk) AS collrisk
+        p.locality as towns, SUM(ST_Length(r.geom))/1000 AS rdlength, AVG(r.egkrisk) AS collrisk
       FROM
         (SELECT
           x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
         FROM
           gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_6spcollrisk AS y
         WHERE
-          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_suburbs AS p
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
       WHERE
         ST_Contains(p.geom, r.geom)
       GROUP BY
-        p.name_u;
+        p.locality;
     "))
 setkey(egk_risk.towns,towns)
 
 model.data.towns <- merge(egk_risk.towns,data.towns, by="towns", all.x=TRUE)
 model.data.towns$ncoll[is.na(model.data.towns$ncoll)] <- 0
+
+#write.csv(model.data.towns[,.(towns,ncoll)],"data/iag_kang_coll_sums.csv", row.names=FALSE)
 
 no.towns.coll <- model.data.towns[!data.towns,]
 no.match.towns.coll <- data.towns[!model.data.towns,]
@@ -108,6 +110,9 @@ model.towns <- glm(formula=ncoll ~ log(collrisk), data=model.data.towns, family=
 summary(model.towns)
 
 paste("% Deviance Explained: ",round(((model.towns$null.deviance - model.towns$deviance)/model.towns$null.deviance)*100,2),sep="")  #Report reduction in deviance
+
+plot(exp(model.towns$coefficients[1]+model.towns$coefficients[2]*log(model.data.towns$collrisk)), model.data.towns$ncoll, xlab="Expected Number of Collisions",ylab="Observed Number of Collisions")
+abline(a=0,b=1,lty=2,col="red")
 
 model.towns2 <- glm.nb(formula=ncoll ~ log(collrisk), data=model.data.towns)
 
