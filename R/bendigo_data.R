@@ -34,7 +34,9 @@ egk_risk.rds <- as.data.table(dbGetQuery(con,"
         OR
         p.sla_code11 = '235052625'
         OR
-        p.sla_code11 = '235052626');
+        p.sla_code11 = '235052626'
+        OR
+        p.sla_code11 = '235102628');
     "))
 setkey(egk_risk.rds,uid)
 

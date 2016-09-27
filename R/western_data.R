@@ -26,8 +26,6 @@ egk_risk.rds <- as.data.table(dbGetQuery(con,"
        AND
         (p.sla_code11 = '210152491'
         OR
-        p.sla_code11 = '215051831'
-        OR
         p.sla_code11 = '215106261'
         OR
         p.sla_code11 = '215106265'
