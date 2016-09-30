@@ -105,22 +105,34 @@ setkey(egk_coll.rds,uid)
 val.data <- merge(egk_risk.rds,egk_coll.rds, by="uid", all.x=TRUE)
 val.data$ncoll[is.na(val.data$ncoll)] <- 0
 
-val.data <- na.omit(val.data)
+val.data.western <- na.omit(val.data)
 
-distplot(val.data$ncoll, type="poisson")
-distplot(val.data$ncoll, type="nbinomial")
+val.data.western$nyears <- 2
 
-#model <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=val.data, family=poisson)
+#distplot(val.data.western$ncoll, type="poisson")
+#distplot(val.data.western$ncoll, type="nbinomial")
 
-model <- glm(formula=ncoll ~ log(collrisk), data=val.data, family=poisson)
+#model <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=val.data.western, family=poisson)
 
-summary(model)
+model.western <- glm(formula=ncoll ~ I(collrisk - log(5)) + offset(log(nyears)), data=val.data.western, family=poisson)
 
-paste("% Deviance Explained: ",round(((model$null.deviance - model$deviance)/model$null.deviance)*100,2),sep="")  #Report reduction in deviance
+summary(model.western)
 
-model.nb <- glm.nb(formula=ncoll ~ log(collrisk), data=val.data)
-summary(model.nb)
-paste("% Deviance Explained: ",round(((model.nb$null.deviance - model.nb$deviance)/model.nb$null.deviance)*100,2),sep="")  #Report reduction in deviance
+dev.western <- paste("% Deviance Explained: ",round(((model.western$null.deviance - model.western$deviance)/model.western$null.deviance)*100,2),sep="")  #Report reduction in deviance
 
-plot(val.data$ncoll, exp(model.nb$coefficients[1]+model.nb$coefficients[2]*log(val.data$collrisk)),xlab="Observed Number of Collisions",ylab="Expected Number of Collisions")
-abline(a=0,b=1,lty=2,col="red")
+dispersiontest(model.western,trafo=1)
+
+model.western2 <- glmer(ncoll ~ I(collrisk - log(5)) + offset(log(nyears)) + (1|id), data=cbind(val.data.western,"id"=row(val.data.western)[,1]), family=poisson)
+
+summary(model.western2)
+
+R2_western <- sem.model.fits(model.western2)
+
+
+
+# model.nb <- glm.nb(formula=ncoll ~ exp(collrisk), data=val.data)
+# summary(model.nb)
+# paste("% Deviance Explained: ",round(((model.nb$null.deviance - model.nb$deviance)/model.nb$null.deviance)*100,2),sep="")  #Report reduction in deviance
+# 
+# plot(val.data$ncoll, exp(model.nb$coefficients[1]+model.nb$coefficients[2]*log(val.data$collrisk)),xlab="Observed Number of Collisions",ylab="Expected Number of Collisions")
+# abline(a=0,b=1,lty=2,col="red")

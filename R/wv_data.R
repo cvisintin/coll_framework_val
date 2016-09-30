@@ -50,22 +50,43 @@ setkey(egk_coll.rds,uid)
 val.data <- merge(egk_risk.rds,egk_coll.rds, by="uid", all.x=TRUE)
 val.data$ncoll[is.na(val.data$ncoll)] <- 0
 
-val.data <- na.omit(val.data)
+val.data.wv <- na.omit(val.data)
 
-distplot(val.data$ncoll, type="poisson")
-distplot(val.data$ncoll, type="nbinomial")
+val.data.wv$nyears <- 1
 
-#model <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=val.data, family=poisson)
+#distplot(val.data.wv$ncoll, type="poisson")
+#distplot(val.data.wv$ncoll, type="nbinomial")
 
-model <- glm(formula=ncoll ~ log(collrisk), data=val.data, family=poisson)
+#model <- glm(formula=ncoll~log(collrisk) + log(rdlength), data=val.data.wv, family=poisson)
 
-summary(model)
+model.wv <- glm(formula=ncoll ~ I(collrisk - log(5)) + offset(log(nyears)), data=val.data.wv, family=poisson)
 
-paste("% Deviance Explained: ",round(((model$null.deviance - model$deviance)/model$null.deviance)*100,2),sep="")  #Report reduction in deviance
+summary(model.wv)
 
-model.nb <- glm.nb(formula=ncoll ~ log(collrisk), data=val.data)
-summary(model.nb)
-paste("% Deviance Explained: ",round(((model.nb$null.deviance - model.nb$deviance)/model.nb$null.deviance)*100,2),sep="")  #Report reduction in deviance
+dev.wv <- paste("% Deviance Explained: ",round(((model.wv$null.deviance - model.wv$deviance)/model.wv$null.deviance)*100,2),sep="")  #Report reduction in deviance
 
-plot(val.data$ncoll, exp(model.nb$coefficients[1]+model.nb$coefficients[2]*log(val.data$collrisk)),xlab="Observed Number of Collisions",ylab="Expected Number of Collisions")
-abline(a=0,b=1,lty=2,col="red")
+dispersiontest(model.wv,trafo=1)
+
+model.wv0 <- glmer(ncoll ~ 1 + offset(log(nyears)) + (1|id), data=cbind(val.data.wv,"id"=row(val.data.wv)[,1]), family=poisson)
+model.wv2 <- glmer(ncoll ~ I(collrisk - log(5)) + offset(log(nyears)) + (1|id), data=cbind(val.data.wv,"id"=row(val.data.wv)[,1]), family=poisson)
+
+summary(model.wv2)
+
+R2_wv <- sem.model.fits(model.wv2)
+
+Fixed <- fixef(model.wv2)[2] * getME(model.wv2,"X")[, 2]
+VarF <- var(Fixed)
+
+R2_m <- VarF/(VarF + VarCorr(model.wv2)$id[1] + log(1 + 1/exp(as.numeric(fixef(model.wv0)))))
+dev.wv.m <- paste("% Deviance Explained: ",round(R2_m*100,2),sep="")  #Report reduction in deviance
+
+R2_c <- (VarF + VarCorr(model.wv2)$id[1])/(VarF + VarCorr(model.wv2)$id[1] + log(1 + 1/exp(as.numeric(fixef(model.wv0)))))
+dev.wv.c <- paste("% Deviance Explained: ",round(R2_c*100,2),sep="")  #Report reduction in deviance
+
+
+# model.nb <- glm.nb(formula=ncoll ~ log(collrisk), data=val.data)
+# summary(model.nb)
+# paste("% Deviance Explained: ",round(((model.nb$null.deviance - model.nb$deviance)/model.nb$null.deviance)*100,2),sep="")  #Report reduction in deviance
+# 
+# plot(val.data$ncoll, exp(model.nb$coefficients[1]+model.nb$coefficients[2]*log(val.data$collrisk)),xlab="Observed Number of Collisions",ylab="Expected Number of Collisions")
+# abline(a=0,b=1,lty=2,col="red")
