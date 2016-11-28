@@ -7,6 +7,10 @@ require(RPostgreSQL)
 require(raster)
 require(MASS)
 require(vcd)
+require(rethinking)
+require(lme4)
+require(arm)
+source(rstan)
 
 drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
 con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
@@ -118,7 +122,7 @@ model.western <- glm(formula=ncoll ~ I(collrisk - log(5)) + offset(log(nyears)),
 
 summary(model.western)
 
-dev.western <- paste("% Deviance Explained: ",round(((model.western$null.deviance - model.western$deviance)/model.western$null.deviance)*100,2),sep="")  #Report reduction in deviance
+dev.western <- round(((model.western$null.deviance - model.western$deviance)/model.western$null.deviance)*100,2)
 
 dispersiontest(model.western,trafo=1)
 
@@ -126,9 +130,60 @@ model.western2 <- glmer(ncoll ~ I(collrisk - log(5)) + offset(log(nyears)) + (1|
 
 summary(model.western2)
 
-R2_western <- sem.model.fits(model.western2)
+qqnorm(resid(model.western2))
+qqline(resid(model.western2))
+
+qqnorm(ranef(model.western2)$id[,1])
+qqline(ranef(model.western2)$id[,1])
+
+scatter.smooth(fitted(model.western2),resid(model.western2))
+plot(fitted(model.western2),val.data.western$ncoll)
+
+dev.western.glmm <- R2.glmm(model.western2,data.frame(val.data.western,"id"=as.factor(row(val.data.western)[,1])),as.formula(~ I(collrisk - log(5)) + offset(log(nyears))))
 
 
+N <- nrow(val.data.western)
+ncoll <- val.data.western$ncoll
+collrisk <- val.data.western$collrisk
+nyears <- val.data.western$nyears
+id <- seq(1:nrow(val.data.western))
+
+scode.western <- "
+data{
+  int<lower=1> N;
+  int<lower=0> ncoll[N];
+  vector[N] collrisk;
+  vector[N] nyears;
+  int<lower=1> id[N];
+}
+transformed data{
+  vector[N] l_nyears;
+  vector[N] l_collrisk;
+  l_nyears = log(nyears);
+  l_collrisk = collrisk - log(5);
+}
+parameters{
+  real a;
+  real b;
+  vector[N] a_olre;
+  real<lower=0> sigma_olre;
+}
+model{
+  vector[N] l;
+  sigma_olre ~ cauchy( 0 , 2 );
+  a_olre ~ normal( 0 , sigma_olre );
+  b ~ normal( 0 , 1 );
+  a ~ normal( 0 , 10 );
+  for ( i in 1:N ) {
+    l[i] = a + a_olre[id[i]] + b*l_collrisk[i] + l_nyears[i];
+  }
+  ncoll ~ poisson_log(l);
+}
+"
+
+model.western <- stan(model_code = scode.western, iter = 500, chains = 1, cores = 1, seed=123)
+
+precis(model.western)
 
 # model.nb <- glm.nb(formula=ncoll ~ exp(collrisk), data=val.data)
 # summary(model.nb)

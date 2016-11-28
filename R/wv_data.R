@@ -7,6 +7,10 @@ require(RPostgreSQL)
 require(raster)
 require(MASS)
 require(vcd)
+require(rethinking)
+require(lme4)
+require(arm)
+source("R/R2glmm.R")
 
 drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
 con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
@@ -63,7 +67,7 @@ model.wv <- glm(formula=ncoll ~ I(collrisk - log(5)) + offset(log(nyears)), data
 
 summary(model.wv)
 
-dev.wv <- paste("% Deviance Explained: ",round(((model.wv$null.deviance - model.wv$deviance)/model.wv$null.deviance)*100,2),sep="")  #Report reduction in deviance
+dev.wv <- round(((model.wv$null.deviance - model.wv$deviance)/model.wv$null.deviance)*100,2)  #Report reduction in deviance
 
 dispersiontest(model.wv,trafo=1)
 
@@ -71,6 +75,10 @@ model.wv0 <- glmer(ncoll ~ 1 + offset(log(nyears)) + (1|id), data=cbind(val.data
 model.wv2 <- glmer(ncoll ~ I(collrisk - log(5)) + offset(log(nyears)) + (1|id), data=cbind(val.data.wv,"id"=row(val.data.wv)[,1]), family=poisson)
 
 summary(model.wv2)
+
+plot(predict(model.wv2, type="response"),val.data.wv$ncoll, xlab="Predicted Counts", ylab="Observed Counts")
+abline(0, 1, col="red", lty=2)
+
 
 R2_wv <- sem.model.fits(model.wv2)
 
