@@ -1,4 +1,5 @@
 require(data.table)
+require(RPostgreSQL)
 require(plyr)
 
 "roc" <- function (obsdat, preddat){
@@ -31,12 +32,6 @@ setkey(western.data,uid)
 
 crashstats.data <- as.data.table(read.csv(file="data/model_data_crashstats.csv"))
 setkey(crashstats.data,uid)
-
-#Load aggregated independent data for validation
-iag.data <- as.data.table(read.csv("data/iag_kang_coll.csv"))
-data.towns <- iag.data[,.N,by="NA_TOWN"]
-setnames(data.towns,c("towns","ncoll"))
-setkey(data.towns,towns)
 
 #Create copy of model data for additional dataset creation
 wv.data <- copy(data)
@@ -135,6 +130,8 @@ summary(bwc.glm)  #Examine fit of regression model
 dev(bwc.glm)  #Report reduction in deviance
 
 #Make predictions
+preds <- as.data.table(cbind("uid"=wv.data$uid,"collrisk"=predict(coll.glm, type="response")))
+
 b.preds <- as.data.table(cbind("uid"=b.model.data$uid,"collrisk"=predict(b.glm, type="response")))
 w.preds <- as.data.table(cbind("uid"=w.model.data$uid,"collrisk"=predict(w.glm, type="response")))
 c.preds <- as.data.table(cbind("uid"=c.model.data$uid,"collrisk"=predict(c.glm, type="response")))
@@ -143,7 +140,23 @@ wc.preds <- as.data.table(cbind("uid"=wc.model.data$uid,"collrisk"=predict(wc.gl
 cb.preds <- as.data.table(cbind("uid"=cb.model.data$uid,"collrisk"=predict(cb.glm, type="response")))
 bwc.preds <- as.data.table(cbind("uid"=bwc.model.data$uid,"collrisk"=predict(bwc.glm, type="response")))
 
-#Validate models
+#Write predictions to database
+drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
+con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
+
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk"), value = preds, row.names=FALSE, overwrite=TRUE)
+
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_b"), value = b.preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_w"), value = w.preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_c"), value = c.preds, row.names=FALSE, overwrite=TRUE)
+
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bw"), value = bw.preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_wc"), value = wc.preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_cb"), value = cb.preds, row.names=FALSE, overwrite=TRUE)
+
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bwc"), value = bwc.preds, row.names=FALSE, overwrite=TRUE)
+
+#Validate predictions with each independent dataset
 val.b <- summary(glm(b.model.data$coll ~ predict(coll.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
 val.w <- summary(glm(w.model.data$coll ~ predict(coll.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
 val.c <- summary(glm(c.model.data$coll ~ predict(coll.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
@@ -164,3 +177,280 @@ bw.val.c <- summary(glm(c.model.data$coll ~ predict(bw.glm, c.model.data, type="
 wc.val.b <- summary(glm(b.model.data$coll ~ predict(wc.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
 
 cb.val.w <- summary(glm(w.model.data$coll ~ predict(cb.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
+
+#Validate predictions with aggregated insurance data
+iag.data <- as.data.table(read.csv("data/iag_kang_coll.csv")) #Load aggregated independent data for validation
+data.towns <- iag.data[,.N,by="NA_TOWN"]
+setnames(data.towns,c("towns","ncoll"))
+setkey(data.towns,towns)
+
+#Original predictions
+preds.towns <- as.data.table(dbGetQuery(con,"
+                                        SELECT
+                                        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+                                        FROM
+                                        (SELECT
+                                        x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+                                        FROM
+                                        gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk AS y
+                                        WHERE
+                                        x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+                                        WHERE
+                                        ST_Contains(p.geom, r.geom);
+                                        "))
+setkey(preds.towns,towns)
+
+val.data.towns <- merge(preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
+
+
+#Predictions with Bendigo data
+b.preds.towns <- as.data.table(dbGetQuery(con,"
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+      FROM
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk_b AS y
+        WHERE
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+      WHERE
+        ST_Contains(p.geom, r.geom);
+    "))
+setkey(b.preds.towns,towns)
+
+val.data.towns <- merge(b.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
+
+
+#Predictions with Western data
+w.preds.towns <- as.data.table(dbGetQuery(con,"
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+      FROM
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk_w AS y
+        WHERE
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+      WHERE
+        ST_Contains(p.geom, r.geom);
+    "))
+setkey(w.preds.towns,towns)
+
+val.data.towns <- merge(w.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
+
+
+#Predictions with Crashstats data
+c.preds.towns <- as.data.table(dbGetQuery(con,"
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+      FROM
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk_c AS y
+        WHERE
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+      WHERE
+        ST_Contains(p.geom, r.geom);
+    "))
+setkey(c.preds.towns,towns)
+
+val.data.towns <- merge(c.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
+
+
+#Predictions with Bendigo & Western data
+bw.preds.towns <- as.data.table(dbGetQuery(con,"
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+      FROM
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk_bw AS y
+        WHERE
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+      WHERE
+        ST_Contains(p.geom, r.geom);
+    "))
+setkey(bw.preds.towns,towns)
+
+val.data.towns <- merge(bw.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
+
+
+#Predictions with Western data & Crashstats
+wc.preds.towns <- as.data.table(dbGetQuery(con,"
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+      FROM
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk_wc AS y
+        WHERE
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+      WHERE
+        ST_Contains(p.geom, r.geom);
+    "))
+setkey(wc.preds.towns,towns)
+
+val.data.towns <- merge(wc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
+
+
+#Predictions with Crashstats & Bendigo
+cb.preds.towns <- as.data.table(dbGetQuery(con,"
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+      FROM
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk_cb AS y
+        WHERE
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+      WHERE
+        ST_Contains(p.geom, r.geom);
+    "))
+setkey(cb.preds.towns,towns)
+
+val.data.towns <- merge(cb.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
+
+
+#Predictions with Bendigo, Western & Crashstats
+bwc.preds.towns <- as.data.table(dbGetQuery(con,"
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
+      FROM
+        (SELECT
+          x.uid AS uid, x.geom AS geom, y.collrisk AS collrisk
+        FROM
+          gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_egkcollrisk_bwc AS y
+        WHERE
+          x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+      WHERE
+        ST_Contains(p.geom, r.geom);
+    "))
+setkey(bwc.preds.towns,towns)
+
+val.data.towns <- merge(bwc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
+colnames(val.data.towns)[2] <- "expcoll"
+
+#no.towns.coll <- val.data.towns[!data.towns,]
+#no.match.towns.coll <- data.towns[!val.data.towns,]
+
+val.data.iag <- na.omit(val.data.towns)
+
+val.data.iag$nyears <- 3
+
+model.iag <- glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson)
+
+summary(model.iag)
+
+dev(model.iag)
