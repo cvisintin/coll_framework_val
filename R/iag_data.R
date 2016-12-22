@@ -78,9 +78,26 @@ data.towns <- data[,.N,by="NA_TOWN"]
 setnames(data.towns,c("towns","ncoll"))
 setkey(data.towns,towns)
 
+# egk_risk.towns <- as.data.table(dbGetQuery(con,"
+#       SELECT 
+#         p.locality as towns, SUM(ST_Length(r.geom))/1000 AS rdlength, AVG(r.egkrisk) AS collrisk, SUM(EXP(r.egkrisk)) AS expcoll
+#       FROM
+#         (SELECT
+#           x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
+#         FROM
+#           gis_victoria.vic_gda9455_roads_state AS x, gis_victoria.vic_nogeom_roads_6spcollrisk AS y
+#         WHERE
+#           x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
+#       WHERE
+#         ST_Contains(p.geom, r.geom)
+#       GROUP BY
+#         p.locality;
+#     "))
+# setkey(egk_risk.towns,towns)
+
 egk_risk.towns <- as.data.table(dbGetQuery(con,"
-      SELECT 
-        p.locality as towns, SUM(ST_Length(r.geom))/1000 AS rdlength, AVG(r.egkrisk) AS collrisk, SUM(EXP(r.egkrisk)) AS expcoll
+      SELECT
+        r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.egkrisk AS collrisk
       FROM
         (SELECT
           x.uid AS uid, x.geom AS geom, y.egk AS egkrisk
@@ -89,16 +106,20 @@ egk_risk.towns <- as.data.table(dbGetQuery(con,"
         WHERE
           x.uid = y.uid) AS r, gis_victoria.vic_gda9455_admin_localities AS p
       WHERE
-        ST_Contains(p.geom, r.geom)
-      GROUP BY
-        p.locality;
+        ST_Contains(p.geom, r.geom);
     "))
 setkey(egk_risk.towns,towns)
+
+####Insert code to copy model predictions to data.table by matching uid of road segment...
+
+egk_risk.towns[,sum(exp(collrisk)),by="towns"]
 
 val.data.towns <- merge(egk_risk.towns,data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 
 #write.csv(val.data.towns[,.(towns,ncoll)],"data/iag_kang_coll_sums.csv", row.names=FALSE)
+#write.csv(val.data.towns,"data/iag_kang_coll_sums.csv", row.names=FALSE)
+#val.data.towns <- read.csv("data/iag_kang_coll_sums.csv")
 
 no.towns.coll <- val.data.towns[!data.towns,]
 no.match.towns.coll <- data.towns[!val.data.towns,]
