@@ -2,9 +2,10 @@ require(ggplot2)
 require(plyr)
 require(plotROC)
 
-load(file="output/coll_glm")
-load(file="output/perform_glm_cv")
-load(file="data/coll_glm_data")
+load(file="data/vic_model_data")
+load(file="data/vic_coll_glm")
+load(file="output/glms")
+load(file="output/preds")
 
 roc <- function (obsdat, preddat){
   if (length(obsdat) != length(preddat)) 

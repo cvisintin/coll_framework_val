@@ -104,66 +104,87 @@ bwc.model.data[coll>1,coll:=1]
 b.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = b.model.data)  #Fit regression model
 summary(b.glm)  #Examine fit of regression model
 dev(b.glm)  #Report reduction in deviance
+#save(b.glm,file="output/b_glm")
 
 w.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = w.model.data)  #Fit regression model
 summary(w.glm)
 dev(w.glm)
+#save(w.glm,file="output/w_glm")
 
 c.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = c.model.data)  #Fit regression model
 summary(c.glm)
 dev(c.glm)
+#save(c.glm,file="output/c_glm")
 
 bw.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = bw.model.data)  #Fit regression model
 summary(bw.glm)
 dev(bw.glm)
+#save(bw.glm,file="output/bw_glm")
 
 wc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = wc.model.data)  #Fit regression model
 summary(wc.glm)
 dev(wc.glm)
+#save(wc.glm,file="output/wc_glm")
 
 cb.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = cb.model.data)  #Fit regression model
 summary(cb.glm)
 dev(cb.glm)
+#save(cb.glm,file="output/cb_glm")
 
 bwc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = bwc.model.data)  #Fit regression model
 summary(bwc.glm)
 dev(bwc.glm)
+#save(bwc.glm,file="output/bwc_glm")
+
+save(b.glm,w.glm,c.glm,bw.glm,wc.glm,cb.glm,bwc.glm,file="output/glms")
 
 #Make predictions
 preds <- as.data.table(cbind("uid"=wv.data$uid,"collrisk"=predict(coll.glm, type="response")))
 
-b.preds <- as.data.table(cbind("uid"=b.model.data$uid,"collrisk"=predict(b.glm, type="response")))
-w.preds <- as.data.table(cbind("uid"=w.model.data$uid,"collrisk"=predict(w.glm, type="response")))
-c.preds <- as.data.table(cbind("uid"=c.model.data$uid,"collrisk"=predict(c.glm, type="response")))
-bw.preds <- as.data.table(cbind("uid"=bw.model.data$uid,"collrisk"=predict(bw.glm, type="response")))
-wc.preds <- as.data.table(cbind("uid"=wc.model.data$uid,"collrisk"=predict(wc.glm, type="response")))
-cb.preds <- as.data.table(cbind("uid"=cb.model.data$uid,"collrisk"=predict(cb.glm, type="response")))
-bwc.preds <- as.data.table(cbind("uid"=bwc.model.data$uid,"collrisk"=predict(bwc.glm, type="response")))
+# b.preds <- as.data.table(cbind("uid"=b.model.data$uid,"collrisk"=predict(b.glm, type="response")))
+# w.preds <- as.data.table(cbind("uid"=w.model.data$uid,"collrisk"=predict(w.glm, type="response")))
+# c.preds <- as.data.table(cbind("uid"=c.model.data$uid,"collrisk"=predict(c.glm, type="response")))
+# bw.preds <- as.data.table(cbind("uid"=bw.model.data$uid,"collrisk"=predict(bw.glm, type="response")))
+# wc.preds <- as.data.table(cbind("uid"=wc.model.data$uid,"collrisk"=predict(wc.glm, type="response")))
+# cb.preds <- as.data.table(cbind("uid"=cb.model.data$uid,"collrisk"=predict(cb.glm, type="response")))
+# bwc.preds <- as.data.table(cbind("uid"=bwc.model.data$uid,"collrisk"=predict(bwc.glm, type="response")))
+
+id <- c("b","w","c","bw","wc","cb","bwc")
+
+for(i in id){
+  #uid <- mget(paste0(i,".model.data$uid"))
+  #assign(paste0(i,"_collrisk"),predict(get(paste0(i,".glm")), type="response")
+  preds <- cbind(preds,predict(get(paste0(i,".glm")), type="response"))
+  colnames(preds)[length(colnames(preds))] <- paste0(i,"_collrisk")
+}
+save(preds, file="output/preds")
 
 #Write predictions to database
 drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
 con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk"), value = preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk"), value = preds[,.(uid,collrisk)], row.names=FALSE, overwrite=TRUE)
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_b"), value = b.preds, row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_w"), value = w.preds, row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_c"), value = c.preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_b"), value = preds[,.(uid,"collrisk"=b_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_w"), value = preds[,.(uid,"collrisk"=w_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_c"), value = preds[,.(uid,"collrisk"=c_collrisk)], row.names=FALSE, overwrite=TRUE)
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bw"), value = bw.preds, row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_wc"), value = wc.preds, row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_cb"), value = cb.preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bw"), value = preds[,.(uid,"collrisk"=bw_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_wc"), value = preds[,.(uid,"collrisk"=wc_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_cb"), value = preds[,.(uid,"collrisk"=cb_collrisk)], row.names=FALSE, overwrite=TRUE)
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bwc"), value = bwc.preds, row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bwc"), value = preds[,.(uid,"collrisk"=bwc_collrisk)], row.names=FALSE, overwrite=TRUE)
 
 #Validate predictions with each independent dataset
+val.preds <- data.frame("x"=rep(NA,7),"b"=rep(NA,7),"c"=rep(NA,7),"w"=rep(NA,7),"bw"=rep(NA,7),"wc"=rep(NA,7),"cb"=rep(NA,7),"bwc"=rep(NA,7))
+
 val.b <- summary(glm(b.model.data$coll ~ predict(coll.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
 val.w <- summary(glm(w.model.data$coll ~ predict(coll.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
 val.c <- summary(glm(c.model.data$coll ~ predict(coll.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
 
-roc.b <- roc(b.model.data$coll, predict(coll.glm, b.model.data, type="response"))
-roc.w <- roc(w.model.data$coll, predict(coll.glm, w.model.data, type="response"))
-roc.c <- roc(c.model.data$coll, predict(coll.glm, c.model.data, type="response"))
+val.preds[1,1] <- roc(b.model.data$coll, predict(coll.glm, b.model.data, type="response"))
+val.preds[2,1] <- roc(w.model.data$coll, predict(coll.glm, w.model.data, type="response"))
+val.preds[3,1] <- roc(c.model.data$coll, predict(coll.glm, c.model.data, type="response"))
 
 
 b.val.w <- summary(glm(w.model.data$coll ~ predict(b.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
