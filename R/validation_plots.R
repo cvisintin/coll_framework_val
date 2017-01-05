@@ -6,6 +6,8 @@ load(file="data/vic_model_data")
 load(file="data/vic_coll_glm")
 load(file="output/glms")
 load(file="output/preds")
+load(file="output/vals")
+load(file="output/glm_sums_iag")
 
 roc <- function (obsdat, preddat){
   if (length(obsdat) != length(preddat)) 
@@ -19,6 +21,25 @@ roc <- function (obsdat, preddat){
 }
 
 invcloglog <- function (x) {1-exp(-exp(x))}
+
+preds.m <- melt(preds[sample(nrow(preds), 1000), ], id.vars=c("uid"))
+
+#plot predictions with varying combinations of data
+ggplot() +
+  geom_line(data=preds.m, aes(y=value,x=variable,group=uid)) +
+  #geom_pointrange(data=plot.info, aes(x=median_p, y=prop_coll, ymin=prop_lo, ymax=prop_hi), size = 0.2, inherit.aes=FALSE) +
+  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
+  #geom_segment(aes(x = 0, y = 0, xend = .04, yend = .04), linetype=2, size=0.1, inherit.aes=FALSE) +
+  #coord_flip() +
+  ylab("Observed Rate (proportion in one year)") +
+  xlab("Predicted Rate (proportion in one year)") +
+  theme_bw() +
+  theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  theme(text = element_text(size = 10))
+
 
 y <- coll.glm$data$y
 p <- predict(coll.glm, coll.glm$data, type="response")

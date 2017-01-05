@@ -14,7 +14,7 @@ require(plyr)
 }
 
 "dev" <- function (model){
-  paste0("% Deviance Explained: ",round(((model$null.deviance - model$deviance)/model$null.deviance)*100,2))
+  round(((model$null.deviance - model$deviance)/model$null.deviance)*100,2)
 }
 
 #Load data from Victoria EGK collision modelling
@@ -176,7 +176,8 @@ dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_cb"), value = 
 dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bwc"), value = preds[,.(uid,"collrisk"=bwc_collrisk)], row.names=FALSE, overwrite=TRUE)
 
 #Validate predictions with each independent dataset
-val.preds <- data.frame("x"=rep(NA,7),"b"=rep(NA,7),"c"=rep(NA,7),"w"=rep(NA,7),"bw"=rep(NA,7),"wc"=rep(NA,7),"cb"=rep(NA,7),"bwc"=rep(NA,7))
+val.preds <- data.frame("x"=rep(NA,3),"b"=rep(NA,3),"w"=rep(NA,3),"c"=rep(NA,3),"bw"=rep(NA,3),"wc"=rep(NA,3),"cb"=rep(NA,3))
+row.names(val.preds) <- id[1:3]
 
 val.b <- summary(glm(b.model.data$coll ~ predict(coll.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
 val.w <- summary(glm(w.model.data$coll ~ predict(coll.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
@@ -186,42 +187,37 @@ val.preds[1,1] <- roc(b.model.data$coll, predict(coll.glm, b.model.data, type="r
 val.preds[2,1] <- roc(w.model.data$coll, predict(coll.glm, w.model.data, type="response"))
 val.preds[3,1] <- roc(c.model.data$coll, predict(coll.glm, c.model.data, type="response"))
 
-
 b.val.w <- summary(glm(w.model.data$coll ~ predict(b.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
 b.val.c <- summary(glm(c.model.data$coll ~ predict(b.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
 
-b.roc.w <- roc(w.model.data$coll, predict(b.glm, w.model.data, type="response"))
-b.roc.c <- roc(c.model.data$coll, predict(b.glm, c.model.data, type="response"))
-
+val.preds[2,2] <- roc(w.model.data$coll, predict(b.glm, w.model.data, type="response"))
+val.preds[3,2] <- roc(c.model.data$coll, predict(b.glm, c.model.data, type="response"))
 
 w.val.b <- summary(glm(b.model.data$coll ~ predict(w.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
 w.val.c <- summary(glm(c.model.data$coll ~ predict(w.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
 
-w.roc.b <- roc(b.model.data$coll, predict(w.glm, b.model.data, type="response"))
-w.roc.c <- roc(c.model.data$coll, predict(w.glm, c.model.data, type="response"))
-
+val.preds[1,3] <- roc(b.model.data$coll, predict(w.glm, b.model.data, type="response"))
+val.preds[3,3] <- roc(c.model.data$coll, predict(w.glm, c.model.data, type="response"))
 
 c.val.b <- summary(glm(b.model.data$coll ~ predict(c.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
 c.val.w <- summary(glm(w.model.data$coll ~ predict(c.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
 
-c.roc.b <- roc(b.model.data$coll, predict(c.glm, b.model.data, type="response"))
-c.roc.w <- roc(w.model.data$coll, predict(c.glm, w.model.data, type="response"))
-
+val.preds[1,4] <- roc(b.model.data$coll, predict(c.glm, b.model.data, type="response"))
+val.preds[2,4] <- roc(w.model.data$coll, predict(c.glm, w.model.data, type="response"))
 
 bw.val.c <- summary(glm(c.model.data$coll ~ predict(bw.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
 
-bw.roc.c <- roc(c.model.data$coll, predict(bw.glm, c.model.data, type="response"))
-
+val.preds[3,5] <- roc(c.model.data$coll, predict(bw.glm, c.model.data, type="response"))
 
 wc.val.b <- summary(glm(b.model.data$coll ~ predict(wc.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
 
-wc.roc.b <- roc(b.model.data$coll, predict(wc.glm, b.model.data, type="response"))
-
+val.preds[1,6] <- roc(b.model.data$coll, predict(wc.glm, b.model.data, type="response"))
 
 cb.val.w <- summary(glm(w.model.data$coll ~ predict(cb.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
 
-cb.roc.w <- roc(w.model.data$coll, predict(cb.glm, w.model.data, type="response"))
+val.preds[2,7] <- roc(w.model.data$coll, predict(cb.glm, w.model.data, type="response"))
 
+save(val.preds,val.b,val.w,val.c,b.val.w,b.val.c,w.val.b,w.val.c,c.val.b,c.val.w,bw.val.c,wc.val.b,cb.val.w,file="output/vals")
 
 #Validate predictions with aggregated insurance data
 iag.data <- as.data.table(read.csv("data/iag_kang_coll.csv")) #Load aggregated independent data for validation
@@ -289,7 +285,7 @@ val.data.iag$nyears <- 3
 
 val.iag.b <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-val.iag.dev.b <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+val.iag.dev[2] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Western data
@@ -321,7 +317,7 @@ val.data.iag$nyears <- 3
 
 val.iag.w <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-val.iag.dev.w <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+val.iag.dev[3] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Crashstats data
@@ -353,7 +349,7 @@ val.data.iag$nyears <- 3
 
 val.iag.c <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-val.iag.dev.c <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+val.iag.dev[4] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Bendigo & Western data
@@ -385,7 +381,7 @@ val.data.iag$nyears <- 3
 
 val.iag.bw <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-val.iag.dev.bw <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+val.iag.dev[5] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Western data & Crashstats
@@ -417,7 +413,7 @@ val.data.iag$nyears <- 3
 
 val.iag.wc <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-val.iag.dev.wc <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+val.iag.dev[6] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Crashstats & Bendigo
@@ -449,7 +445,7 @@ val.data.iag$nyears <- 3
 
 val.iag.cb <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-val.iag.dev.cb <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+val.iag.dev[7] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Bendigo, Western & Crashstats
@@ -481,4 +477,6 @@ val.data.iag$nyears <- 3
 
 val.iag.bwc <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-val.iag.dev.bwc <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+val.iag.dev[8] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+
+save(val.iag.dev,val.iag.b,val.iag.w,val.iag.c,val.iag.bw,val.iag.wc,val.iag.cb,val.iag.bwc,file="output/glm_sums_iag")
