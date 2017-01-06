@@ -479,4 +479,4 @@ val.iag.bwc <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)),
 
 val.iag.dev[8] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-save(val.iag.dev,val.iag.b,val.iag.w,val.iag.c,val.iag.bw,val.iag.wc,val.iag.cb,val.iag.bwc,file="output/glm_sums_iag")
+save(val.iag.dev,val.iag,val.iag.b,val.iag.w,val.iag.c,val.iag.bw,val.iag.wc,val.iag.cb,val.iag.bwc,file="output/glm_sums_iag")
