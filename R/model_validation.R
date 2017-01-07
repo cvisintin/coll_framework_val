@@ -176,7 +176,7 @@ dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_cb"), value = 
 dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bwc"), value = preds[,.(uid,"collrisk"=bwc_collrisk)], row.names=FALSE, overwrite=TRUE)
 
 #Validate predictions with each independent dataset
-val.preds <- data.frame("x"=rep(NA,3),"b"=rep(NA,3),"w"=rep(NA,3),"c"=rep(NA,3),"bw"=rep(NA,3),"wc"=rep(NA,3),"cb"=rep(NA,3))
+val.preds <- data.frame("o"=rep(NA,3),"b"=rep(NA,3),"w"=rep(NA,3),"c"=rep(NA,3),"bw"=rep(NA,3),"wc"=rep(NA,3),"cb"=rep(NA,3))
 row.names(val.preds) <- id[1:3]
 
 val.b <- summary(glm(b.model.data$coll ~ predict(coll.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
@@ -218,6 +218,7 @@ cb.val.w <- summary(glm(w.model.data$coll ~ predict(cb.glm, w.model.data, type="
 val.preds[2,7] <- roc(w.model.data$coll, predict(cb.glm, w.model.data, type="response"))
 
 save(val.preds,val.b,val.w,val.c,b.val.w,b.val.c,w.val.b,w.val.c,c.val.b,c.val.w,bw.val.c,wc.val.b,cb.val.w,file="output/vals")
+write.csv(val.preds,file="output/val_preds.csv")
 
 #Validate predictions with aggregated insurance data
 iag.data <- as.data.table(read.csv("data/iag_kang_coll.csv")) #Load aggregated independent data for validation
