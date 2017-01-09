@@ -38,108 +38,117 @@ wv.data <- copy(data)
 setkey(wv.data,uid)
 
 #Combine existing data with Bendigo
-b.model.data <- copy(bendigo.data)
-b.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+ob.model.data <- copy(bendigo.data)
+ob.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 # sum(b.model.data$coll>1)
 # 21
-b.model.data[coll>1,coll:=1]
+ob.model.data[coll>1,coll:=1]
 
 #Combine existing data with Western
-w.model.data <- copy(western.data)
-w.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+ow.model.data <- copy(western.data)
+ow.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 # sum(w.model.data$coll>1)
 # 31
-w.model.data[coll>1,coll:=1]
+ow.model.data[coll>1,coll:=1]
 
 #Combine existing data with Crashstats
-c.model.data <- copy(crashstats.data)
-c.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+oc.model.data <- copy(crashstats.data)
+oc.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 # sum(c.model.data$coll>1)
 # 47
-c.model.data[coll>1,coll:=1]
+oc.model.data[coll>1,coll:=1]
 
 #Combine existing data with Bendigo & Western
-bw.model.data <- copy(bendigo.data)
-setkey(bw.model.data,uid)
-bw.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-setkey(bw.model.data,uid)
-bw.model.data[western.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+obw.model.data <- copy(bendigo.data)
+setkey(obw.model.data,uid)
+obw.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+setkey(obw.model.data,uid)
+obw.model.data[western.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 # sum(bw.model.data$coll>1)
 # 52
-bw.model.data[coll>1,coll:=1]
+obw.model.data[coll>1,coll:=1]
 
 #Combine existing data with Western & Crashstats
-wc.model.data <- copy(western.data)
-setkey(wc.model.data,uid)
-wc.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-setkey(wc.model.data,uid)
-wc.model.data[crashstats.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+owc.model.data <- copy(western.data)
+setkey(owc.model.data,uid)
+owc.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+setkey(owc.model.data,uid)
+owc.model.data[crashstats.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 # sum(wc.model.data$coll>1)
 # 88
-wc.model.data[coll>1,coll:=1]
+owc.model.data[coll>1,coll:=1]
 
 #Combine existing data with Crashstats & Bendigo
-cb.model.data <- copy(crashstats.data)
-setkey(cb.model.data,uid)
-cb.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-setkey(cb.model.data,uid)
-cb.model.data[bendigo.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+ocb.model.data <- copy(crashstats.data)
+setkey(ocb.model.data,uid)
+ocb.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+setkey(ocb.model.data,uid)
+ocb.model.data[bendigo.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 # sum(cb.model.data$coll>1)
 # 71
-cb.model.data[coll>1,coll:=1]
+ocb.model.data[coll>1,coll:=1]
 
 #Combine existing data with Bendigo, Western & Crashstats
-bwc.model.data <- copy(bendigo.data)
-setkey(bwc.model.data,uid)
-bwc.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-setkey(bwc.model.data,uid)
-bwc.model.data[western.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-setkey(bwc.model.data,uid)
-bwc.model.data[crashstats.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+obwc.model.data <- copy(bendigo.data)
+setkey(obwc.model.data,uid)
+obwc.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+setkey(obwc.model.data,uid)
+obwc.model.data[western.data, `:=`(uid = i.uid, coll = coll + i.coll)]
+setkey(obwc.model.data,uid)
+obwc.model.data[crashstats.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 # sum(bwc.model.data$coll>1)
 # 112
-bwc.model.data[coll>1,coll:=1]
+obwc.model.data[coll>1,coll:=1]
+
+#Sum total collision for each data combination
+all.data <- list(wv.data,ob.model.data,ow.model.data,oc.model.data,obw.model.data,owc.model.data,ocb.model.data,obwc.model.data)
+total.coll <- lapply(all.data, function(x) sum(x[coll==1,coll]))
+
+save(all.data,total.coll,file="data/all_data")
 
 #Create models
-b.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = b.model.data)  #Fit regression model
-summary(b.glm)  #Examine fit of regression model
-dev(b.glm)  #Report reduction in deviance
+o.glm <- coll.glm
+rm(coll.glm)
+
+ob.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = ob.model.data)  #Fit regression model
+summary(ob.glm)  #Examine fit of regression model
+dev(ob.glm)  #Report reduction in deviance
 #save(b.glm,file="output/b_glm")
 
-w.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = w.model.data)  #Fit regression model
-summary(w.glm)
-dev(w.glm)
+ow.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = ow.model.data)  #Fit regression model
+summary(ow.glm)
+dev(ow.glm)
 #save(w.glm,file="output/w_glm")
 
-c.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = c.model.data)  #Fit regression model
-summary(c.glm)
-dev(c.glm)
+oc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = oc.model.data)  #Fit regression model
+summary(oc.glm)
+dev(oc.glm)
 #save(c.glm,file="output/c_glm")
 
-bw.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = bw.model.data)  #Fit regression model
-summary(bw.glm)
-dev(bw.glm)
+obw.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = obw.model.data)  #Fit regression model
+summary(obw.glm)
+dev(obw.glm)
 #save(bw.glm,file="output/bw_glm")
 
-wc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = wc.model.data)  #Fit regression model
-summary(wc.glm)
-dev(wc.glm)
+owc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = owc.model.data)  #Fit regression model
+summary(owc.glm)
+dev(owc.glm)
 #save(wc.glm,file="output/wc_glm")
 
-cb.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = cb.model.data)  #Fit regression model
-summary(cb.glm)
-dev(cb.glm)
+ocb.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = ocb.model.data)  #Fit regression model
+summary(ocb.glm)
+dev(ocb.glm)
 #save(cb.glm,file="output/cb_glm")
 
-bwc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = bwc.model.data)  #Fit regression model
-summary(bwc.glm)
-dev(bwc.glm)
+obwc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = obwc.model.data)  #Fit regression model
+summary(obwc.glm)
+dev(obwc.glm)
 #save(bwc.glm,file="output/bwc_glm")
 
-save(b.glm,w.glm,c.glm,bw.glm,wc.glm,cb.glm,bwc.glm,file="output/glms")
+save(o.glm,ob.glm,ow.glm,oc.glm,obw.glm,owc.glm,ocb.glm,obwc.glm,file="output/glms")
 
 #Make predictions
-preds <- as.data.table(cbind("uid"=wv.data$uid,"collrisk"=predict(coll.glm, type="response")))
+preds <- as.data.table(cbind("uid"=wv.data$uid,"collrisk"=predict(o.glm, type="response")))
 
 # b.preds <- as.data.table(cbind("uid"=b.model.data$uid,"collrisk"=predict(b.glm, type="response")))
 # w.preds <- as.data.table(cbind("uid"=w.model.data$uid,"collrisk"=predict(w.glm, type="response")))
@@ -149,7 +158,7 @@ preds <- as.data.table(cbind("uid"=wv.data$uid,"collrisk"=predict(coll.glm, type
 # cb.preds <- as.data.table(cbind("uid"=cb.model.data$uid,"collrisk"=predict(cb.glm, type="response")))
 # bwc.preds <- as.data.table(cbind("uid"=bwc.model.data$uid,"collrisk"=predict(bwc.glm, type="response")))
 
-id <- c("b","w","c","bw","wc","cb","bwc")
+id <- c("ob","ow","oc","obw","owc","ocb","obwc")
 
 for(i in id){
   #uid <- mget(paste0(i,".model.data$uid"))
@@ -157,6 +166,8 @@ for(i in id){
   preds <- cbind(preds,predict(get(paste0(i,".glm")), type="response"))
   colnames(preds)[length(colnames(preds))] <- paste0(i,"_collrisk")
 }
+colnames(preds)[2] <- "o_collrisk"
+
 save(preds, file="output/preds")
 
 #Write predictions to database
@@ -165,59 +176,59 @@ con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres1
 
 dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk"), value = preds[,.(uid,collrisk)], row.names=FALSE, overwrite=TRUE)
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_b"), value = preds[,.(uid,"collrisk"=b_collrisk)], row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_w"), value = preds[,.(uid,"collrisk"=w_collrisk)], row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_c"), value = preds[,.(uid,"collrisk"=c_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_b"), value = preds[,.(uid,"collrisk"=ob_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_w"), value = preds[,.(uid,"collrisk"=ow_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_c"), value = preds[,.(uid,"collrisk"=oc_collrisk)], row.names=FALSE, overwrite=TRUE)
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bw"), value = preds[,.(uid,"collrisk"=bw_collrisk)], row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_wc"), value = preds[,.(uid,"collrisk"=wc_collrisk)], row.names=FALSE, overwrite=TRUE)
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_cb"), value = preds[,.(uid,"collrisk"=cb_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bw"), value = preds[,.(uid,"collrisk"=obw_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_wc"), value = preds[,.(uid,"collrisk"=owc_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_cb"), value = preds[,.(uid,"collrisk"=ocb_collrisk)], row.names=FALSE, overwrite=TRUE)
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bwc"), value = preds[,.(uid,"collrisk"=bwc_collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_bwc"), value = preds[,.(uid,"collrisk"=obwc_collrisk)], row.names=FALSE, overwrite=TRUE)
 
 #Validate predictions with each independent dataset
-val.preds <- data.frame("o"=rep(NA,3),"b"=rep(NA,3),"w"=rep(NA,3),"c"=rep(NA,3),"bw"=rep(NA,3),"wc"=rep(NA,3),"cb"=rep(NA,3))
-row.names(val.preds) <- id[1:3]
+val.preds <- data.frame("o"=rep(NA,3),"ob"=rep(NA,3),"ow"=rep(NA,3),"oc"=rep(NA,3),"obw"=rep(NA,3),"owc"=rep(NA,3),"ocb"=rep(NA,3))
+row.names(val.preds) <- c("b","w","c")
 
-val.b <- summary(glm(b.model.data$coll ~ predict(coll.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
-val.w <- summary(glm(w.model.data$coll ~ predict(coll.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
-val.c <- summary(glm(c.model.data$coll ~ predict(coll.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
+o.val.b <- summary(glm(bendigo.data$coll ~ predict(o.glm, bendigo.data, type="link"), family = binomial(link = "cloglog")))
+o.val.w <- summary(glm(western.data$coll ~ predict(o.glm, western.data, type="link"), family = binomial(link = "cloglog")))
+o.val.c <- summary(glm(crashstats.data$coll ~ predict(o.glm, crashstats.data, type="link"), family = binomial(link = "cloglog")))
 
-val.preds[1,1] <- roc(b.model.data$coll, predict(coll.glm, b.model.data, type="response"))
-val.preds[2,1] <- roc(w.model.data$coll, predict(coll.glm, w.model.data, type="response"))
-val.preds[3,1] <- roc(c.model.data$coll, predict(coll.glm, c.model.data, type="response"))
+val.preds[1,1] <- roc(bendigo.data$coll, predict(o.glm, bendigo.data, type="response"))
+val.preds[2,1] <- roc(western.data$coll, predict(o.glm, western.data, type="response"))
+val.preds[3,1] <- roc(crashstats.data$coll, predict(o.glm, crashstats.data, type="response"))
 
-b.val.w <- summary(glm(w.model.data$coll ~ predict(b.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
-b.val.c <- summary(glm(c.model.data$coll ~ predict(b.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
+ob.val.w <- summary(glm(western.data$coll ~ predict(ob.glm, western.data, type="link"), family = binomial(link = "cloglog")))
+ob.val.c <- summary(glm(crashstats.data$coll ~ predict(ob.glm, crashstats.data, type="link"), family = binomial(link = "cloglog")))
 
-val.preds[2,2] <- roc(w.model.data$coll, predict(b.glm, w.model.data, type="response"))
-val.preds[3,2] <- roc(c.model.data$coll, predict(b.glm, c.model.data, type="response"))
+val.preds[2,2] <- roc(western.data$coll, predict(ob.glm, western.data, type="response"))
+val.preds[3,2] <- roc(crashstats.data$coll, predict(ob.glm, crashstats.data, type="response"))
 
-w.val.b <- summary(glm(b.model.data$coll ~ predict(w.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
-w.val.c <- summary(glm(c.model.data$coll ~ predict(w.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
+ow.val.b <- summary(glm(bendigo.data$coll ~ predict(ow.glm, bendigo.data, type="link"), family = binomial(link = "cloglog")))
+ow.val.c <- summary(glm(crashstats.data$coll ~ predict(ow.glm, crashstats.data, type="link"), family = binomial(link = "cloglog")))
 
-val.preds[1,3] <- roc(b.model.data$coll, predict(w.glm, b.model.data, type="response"))
-val.preds[3,3] <- roc(c.model.data$coll, predict(w.glm, c.model.data, type="response"))
+val.preds[1,3] <- roc(bendigo.data$coll, predict(ow.glm, bendigo.data, type="response"))
+val.preds[3,3] <- roc(crashstats.data$coll, predict(ow.glm, crashstats.data, type="response"))
 
-c.val.b <- summary(glm(b.model.data$coll ~ predict(c.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
-c.val.w <- summary(glm(w.model.data$coll ~ predict(c.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
+oc.val.b <- summary(glm(bendigo.data$coll ~ predict(oc.glm, bendigo.data, type="link"), family = binomial(link = "cloglog")))
+oc.val.w <- summary(glm(western.data$coll ~ predict(oc.glm, western.data, type="link"), family = binomial(link = "cloglog")))
 
-val.preds[1,4] <- roc(b.model.data$coll, predict(c.glm, b.model.data, type="response"))
-val.preds[2,4] <- roc(w.model.data$coll, predict(c.glm, w.model.data, type="response"))
+val.preds[1,4] <- roc(bendigo.data$coll, predict(oc.glm, bendigo.data, type="response"))
+val.preds[2,4] <- roc(western.data$coll, predict(oc.glm, western.data, type="response"))
 
-bw.val.c <- summary(glm(c.model.data$coll ~ predict(bw.glm, c.model.data, type="link"), family = binomial(link = "cloglog")))
+obw.val.c <- summary(glm(crashstats.data$coll ~ predict(obw.glm, crashstats.data, type="link"), family = binomial(link = "cloglog")))
 
-val.preds[3,5] <- roc(c.model.data$coll, predict(bw.glm, c.model.data, type="response"))
+val.preds[3,5] <- roc(crashstats.data$coll, predict(obw.glm, crashstats.data, type="response"))
 
-wc.val.b <- summary(glm(b.model.data$coll ~ predict(wc.glm, b.model.data, type="link"), family = binomial(link = "cloglog")))
+owc.val.b <- summary(glm(bendigo.data$coll ~ predict(owc.glm, bendigo.data, type="link"), family = binomial(link = "cloglog")))
 
-val.preds[1,6] <- roc(b.model.data$coll, predict(wc.glm, b.model.data, type="response"))
+val.preds[1,6] <- roc(bendigo.data$coll, predict(owc.glm, bendigo.data, type="response"))
 
-cb.val.w <- summary(glm(w.model.data$coll ~ predict(cb.glm, w.model.data, type="link"), family = binomial(link = "cloglog")))
+ocb.val.w <- summary(glm(western.data$coll ~ predict(ocb.glm, western.data, type="link"), family = binomial(link = "cloglog")))
 
-val.preds[2,7] <- roc(w.model.data$coll, predict(cb.glm, w.model.data, type="response"))
+val.preds[2,7] <- roc(western.data$coll, predict(ocb.glm, western.data, type="response"))
 
-save(val.preds,val.b,val.w,val.c,b.val.w,b.val.c,w.val.b,w.val.c,c.val.b,c.val.w,bw.val.c,wc.val.b,cb.val.w,file="output/vals")
+save(val.preds,o.val.b,o.val.w,o.val.c,ob.val.w,ob.val.c,ow.val.b,ow.val.c,oc.val.b,oc.val.w,obw.val.c,owc.val.b,ocb.val.w,file="output/vals")
 write.csv(val.preds,file="output/val_preds.csv")
 
 #Validate predictions with aggregated insurance data
@@ -226,8 +237,11 @@ data.towns <- iag.data[,.N,by="NA_TOWN"]
 setnames(data.towns,c("towns","ncoll"))
 setkey(data.towns,towns)
 
+drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
+con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
+
 #Original predictions
-preds.towns <- as.data.table(dbGetQuery(con,"
+o.preds.towns <- as.data.table(dbGetQuery(con,"
                                         SELECT
                                         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
                                         FROM
@@ -240,9 +254,9 @@ preds.towns <- as.data.table(dbGetQuery(con,"
                                         WHERE
                                         ST_Contains(p.geom, r.geom);
                                         "))
-setkey(preds.towns,towns)
+setkey(o.preds.towns,towns)
 
-val.data.towns <- merge(preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(o.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -253,12 +267,12 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+o.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 #Predictions with Bendigo data
-b.preds.towns <- as.data.table(dbGetQuery(con,"
+ob.preds.towns <- as.data.table(dbGetQuery(con,"
       SELECT
         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
       FROM
@@ -271,9 +285,9 @@ b.preds.towns <- as.data.table(dbGetQuery(con,"
       WHERE
         ST_Contains(p.geom, r.geom);
     "))
-setkey(b.preds.towns,towns)
+setkey(ob.preds.towns,towns)
 
-val.data.towns <- merge(b.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(ob.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -284,13 +298,13 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag.b <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+ob.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev[2] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Western data
-w.preds.towns <- as.data.table(dbGetQuery(con,"
+ow.preds.towns <- as.data.table(dbGetQuery(con,"
       SELECT
         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
       FROM
@@ -303,9 +317,9 @@ w.preds.towns <- as.data.table(dbGetQuery(con,"
       WHERE
         ST_Contains(p.geom, r.geom);
     "))
-setkey(w.preds.towns,towns)
+setkey(ow.preds.towns,towns)
 
-val.data.towns <- merge(w.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(ow.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -316,13 +330,13 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag.w <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+ow.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev[3] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Crashstats data
-c.preds.towns <- as.data.table(dbGetQuery(con,"
+oc.preds.towns <- as.data.table(dbGetQuery(con,"
       SELECT
         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
       FROM
@@ -335,9 +349,9 @@ c.preds.towns <- as.data.table(dbGetQuery(con,"
       WHERE
         ST_Contains(p.geom, r.geom);
     "))
-setkey(c.preds.towns,towns)
+setkey(oc.preds.towns,towns)
 
-val.data.towns <- merge(c.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(oc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -348,13 +362,13 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag.c <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+oc.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev[4] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Bendigo & Western data
-bw.preds.towns <- as.data.table(dbGetQuery(con,"
+obw.preds.towns <- as.data.table(dbGetQuery(con,"
       SELECT
         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
       FROM
@@ -367,9 +381,9 @@ bw.preds.towns <- as.data.table(dbGetQuery(con,"
       WHERE
         ST_Contains(p.geom, r.geom);
     "))
-setkey(bw.preds.towns,towns)
+setkey(obw.preds.towns,towns)
 
-val.data.towns <- merge(bw.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(obw.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -380,13 +394,13 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag.bw <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+obw.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev[5] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Western data & Crashstats
-wc.preds.towns <- as.data.table(dbGetQuery(con,"
+owc.preds.towns <- as.data.table(dbGetQuery(con,"
       SELECT
         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
       FROM
@@ -399,9 +413,9 @@ wc.preds.towns <- as.data.table(dbGetQuery(con,"
       WHERE
         ST_Contains(p.geom, r.geom);
     "))
-setkey(wc.preds.towns,towns)
+setkey(owc.preds.towns,towns)
 
-val.data.towns <- merge(wc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(owc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -412,13 +426,13 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag.wc <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+owc.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev[6] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Crashstats & Bendigo
-cb.preds.towns <- as.data.table(dbGetQuery(con,"
+ocb.preds.towns <- as.data.table(dbGetQuery(con,"
       SELECT
         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
       FROM
@@ -431,9 +445,9 @@ cb.preds.towns <- as.data.table(dbGetQuery(con,"
       WHERE
         ST_Contains(p.geom, r.geom);
     "))
-setkey(cb.preds.towns,towns)
+setkey(ocb.preds.towns,towns)
 
-val.data.towns <- merge(cb.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(ocb.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -444,13 +458,13 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag.cb <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+ocb.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev[7] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 
 #Predictions with Bendigo, Western & Crashstats
-bwc.preds.towns <- as.data.table(dbGetQuery(con,"
+obwc.preds.towns <- as.data.table(dbGetQuery(con,"
       SELECT
         r.uid AS uid, p.locality AS towns, ST_Length(r.geom)/1000 AS length, r.collrisk AS collrisk
       FROM
@@ -463,9 +477,9 @@ bwc.preds.towns <- as.data.table(dbGetQuery(con,"
       WHERE
         ST_Contains(p.geom, r.geom);
     "))
-setkey(bwc.preds.towns,towns)
+setkey(obwc.preds.towns,towns)
 
-val.data.towns <- merge(bwc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
+val.data.towns <- merge(obwc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
@@ -476,8 +490,8 @@ val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
 
-val.iag.bwc <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
+obwc.val.iag <- summary(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
 val.iag.dev[8] <- dev(glm(formula=ncoll ~ log(expcoll/5) + offset(log(nyears)), data=val.data.iag, family=poisson))
 
-save(val.iag.dev,val.iag,val.iag.b,val.iag.w,val.iag.c,val.iag.bw,val.iag.wc,val.iag.cb,val.iag.bwc,file="output/glm_sums_iag")
+save(val.iag.dev,o.val.iag,ob.val.iag,ow.val.iag,oc.val.iag,obw.val.iag,owc.val.iag,ocb.val.iag,obwc.val.iag,file="output/glm_sums_iag")
