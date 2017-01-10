@@ -27,7 +27,7 @@ invcloglog <- function (x) {1-exp(-exp(x))}
 
 #create dataframe for mean predicted rates
 data.id <- factor(c("o","ob","ow","oc","obw","owc","ocb","obwc"), levels=c("o","ob","ow","oc","obw","owc","ocb","obwc"))
-preds.m <- data.frame(data.id,"collrisk_m"=apply(preds[,-1,with=FALSE],2,mean),"collrisk_sd"=apply(preds[,-1,with=FALSE],2,sd),"collrisk_min"=apply(preds[,-1,with=FALSE],2,min),"collrisk_max"=apply(preds[,-1,with=FALSE],2,max))
+preds.m <- data.frame(data.id,"collrisk_m"=apply(preds[,-1],2,mean),"collrisk_sd"=apply(preds[,-1],2,sd),"collrisk_min"=apply(preds[,-1],2,min),"collrisk_max"=apply(preds[,-1],2,max))
 preds.m$total.coll <- as.numeric(total.coll)
 
 #preds.m2 <- melt(preds[sample(nrow(preds), 100), ], id.vars=c("uid"))
