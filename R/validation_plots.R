@@ -23,48 +23,126 @@ roc <- function (obsdat, preddat){
   return(round(roc, 4))
 }
 
+"dev" <- function (model){
+  round(((model$null.deviance - model$deviance)/model$null.deviance)*100,2)
+}
+
 invcloglog <- function (x) {1-exp(-exp(x))}
 
 #create dataframe for mean predicted rates
-data.id <- factor(c("o","ob","ow","oc","obw","owc","ocb","obwc"), levels=c("o","ob","ow","oc","obw","owc","ocb","obwc"))
-preds.m <- data.frame(data.id,"collrisk_m"=apply(preds[,-1],2,mean),"collrisk_sd"=apply(preds[,-1],2,sd),"collrisk_min"=apply(preds[,-1],2,min),"collrisk_max"=apply(preds[,-1],2,max))
-preds.m$total.coll <- as.numeric(total.coll)
+#data.id <- factor(c("o","ob","ow","oc","obw","owc","ocb","obwc"), levels=c("o","ob","ow","oc","obw","owc","ocb","obwc"))
+#preds.m <- data.frame(data.id,"collrisk_m"=apply(preds[,-1],2,mean),"collrisk_sd"=apply(preds[,-1],2,sd),"collrisk_min"=apply(preds[,-1],2,min),"collrisk_max"=apply(preds[,-1],2,max))
+#preds.m$total.coll <- as.numeric(total.coll)
 
 #preds.m2 <- melt(preds[sample(nrow(preds), 100), ], id.vars=c("uid"))
 
 #plot predictions with varying combinations of data
-png('figs/preds.png', pointsize = 6, res=300, width = 900, height = 900, bg='transparent')
-ggplot() +
-  geom_point(data=preds.m, aes(x=data.id, y=collrisk_m)) +
-  #geom_pointrange(data=preds.m, aes(x=data.id, y=collrisk_m, ymin=collrisk_m-collrisk_sd, ymax=collrisk_m+collrisk_sd)) +
-  geom_text(data=preds.m, aes(x=data.id, y=collrisk_m, label=total.coll),hjust=0.5, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-  #geom_segment(aes(x = 0, y = 0, xend = .04, yend = .04), linetype=2, size=0.1, inherit.aes=FALSE) +
-  #coord_flip() +
-  scale_y_continuous(breaks=seq(0.0065,0.0095,by=.0005), expand = c(0, 0), lim=c(0.0065,0.0095)) +
-  ylab("Predicted mean rate (across entire road network)") +
-  xlab("Data combinations used for modelling") +
-  theme_bw() +
-  theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
-  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
-  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
-  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-  theme(text = element_text(size = 8))
-dev.off()
-
+# png('figs/preds.png', pointsize = 6, res=300, width = 900, height = 900, bg='transparent')
 # ggplot() +
-#   geom_line(data=preds.m2, aes(y=value,x=variable,group=uid)) +
-#   #geom_pointrange(data=plot.info, aes(x=median_p, y=prop_coll, ymin=prop_lo, ymax=prop_hi), size = 0.2, inherit.aes=FALSE) +
-#   #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
+#   geom_point(data=preds.m, aes(x=data.id, y=collrisk_m)) +
+#   #geom_pointrange(data=preds.m, aes(x=data.id, y=collrisk_m, ymin=collrisk_m-collrisk_sd, ymax=collrisk_m+collrisk_sd)) +
+#   geom_text(data=preds.m, aes(x=data.id, y=collrisk_m, label=total.coll),hjust=0.5, vjust=-1, size = 2.0, inherit.aes=FALSE) +
 #   #geom_segment(aes(x = 0, y = 0, xend = .04, yend = .04), linetype=2, size=0.1, inherit.aes=FALSE) +
 #   #coord_flip() +
-#   ylab("Observed Rate (proportion in one year)") +
-#   xlab("Predicted Rate (proportion in one year)") +
+#   scale_y_continuous(breaks=seq(0.0065,0.0095,by=.0005), expand = c(0, 0), lim=c(0.0065,0.0095)) +
+#   ylab("Predicted mean rate (across entire road network)") +
+#   xlab("Data combinations used for modelling") +
 #   theme_bw() +
 #   theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
 #   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
 #   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
 #   theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-#   theme(text = element_text(size = 10))
+#   theme(text = element_text(size = 8))
+# dev.off()
+
+#create table of model fits for original collision datasets
+mod.sums <- data.frame(cbind(c("City of Bendigo","","","","","Western District","","","","","Crashstats (Victoria wide)","","","",""),
+                             rep(c("Intercept","EGK","TVOL","TVOL2","TSPD"),3),
+                             c(coef(b.glm),coef(w.glm),coef(c.glm)),
+                             c(summary(b.glm)$coefficients[, 2],summary(w.glm)$coefficients[, 2],summary(c.glm)$coefficients[, 2]),
+                             c(summary(b.glm)$coefficients[, 3],summary(w.glm)$coefficients[, 3],summary(c.glm)$coefficients[, 3]),
+                             c(summary(b.glm)$coefficients[, 4],summary(w.glm)$coefficients[, 4],summary(c.glm)$coefficients[, 4]),
+                             c(dev(b.glm),"","","","",dev(w.glm),"","","","",dev(c.glm),"","","","")
+                             )
+)
+
+colnames(mod.sums) <- c("Dataset","Variable","Coefficient","Standard Error","Z-value","Pr(Z)","Deviance Explained")
+
+write.csv(mod.sums, file="output/mod_sums.csv", row.names=FALSE)
+
+#plot results from original glm models using only validation datasets
+
+occ <- foreach(i = c("b","w","c"), .combine=rbind) %do% {
+  model <- get(paste0(i,".glm"))
+  occ.range <- seq(0,1,.0001)[-c(1,length(seq(0,1,.0001)))]
+  occ.fit <- predict.glm(model,data.frame(egk=occ.range,tvol=mean(model$data$tvol),tspd=mean(model$data$tspd)),type="response",se.fit=TRUE)
+  data.frame(x=occ.range,y=occ.fit[["fit"]],ymin=occ.fit[["fit"]]-1.96*occ.fit[["se.fit"]],ymax=occ.fit[["fit"]]+1.96*occ.fit[["se.fit"]],id=i)
+}
+occ$id <- substring(paste0(occ$id,"                 "),1,15)
+
+tiff('figs/occ.tif', pointsize = 10, compression = "lzw", res=300, width = 900, height = 1100)
+ggplot(occ, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
+  geom_line(size=0.3, aes(linetype=id)) +
+  geom_ribbon(alpha=0.3) +
+  ylab("Likelihood of Collision") +
+  xlab("Likelihood of Species Occurrence") +
+  theme_bw() +
+  theme(legend.position="top", legend.title = element_blank(), legend.margin=margin(0,0,0,0), legend.box.margin=margin(5,-10,-10,0)) +
+  theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  scale_y_continuous(breaks=seq(0,.1,by=.02), expand = c(0, 0), lim=c(0,.1)) +
+  scale_x_continuous(breaks=seq(0,1,by=.1), expand = c(0, 0), lim=c(0,1))
+dev.off()
+
+
+tvol <- foreach(i = c("b","w","c"), .combine=rbind) %do% {
+  model <- get(paste0(i,".glm"))
+  tvol.range <- seq(0,40000,10)[-c(1,length(seq(0,40000,10)))]
+  tvol.fit <- predict.glm(model,data.frame(egk=mean(model$data$egk),tvol=tvol.range,tspd=mean(model$data$tspd)),type="response",se.fit=TRUE)
+  data.frame(x=tvol.range,y=tvol.fit[["fit"]],ymin=tvol.fit[["fit"]]-1.96*tvol.fit[["se.fit"]],ymax=tvol.fit[["fit"]]+1.96*tvol.fit[["se.fit"]],id=i)
+}
+tvol$id <- substring(paste0(tvol$id,"                 "),1,15)
+  
+tiff('figs/tvol.tif', pointsize = 10, compression = "lzw", res=300, width = 900, height = 1100)
+ggplot(tvol, aes(x=x/1000,y=y,ymin=ymin,ymax=ymax,group=id)) +
+  geom_line(size=0.3, aes(linetype=id)) +
+  geom_ribbon(alpha=0.3) +
+  ylab("Likelihood of Collision") +
+  xlab("Traffic Volume (1000 vehicles/day)") +
+  theme_bw() +
+  theme(legend.position="top", legend.title = element_blank(), legend.margin=margin(0,0,0,0), legend.box.margin=margin(5,-10,-10,0)) +
+  theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  scale_x_continuous(breaks=seq(0,40,by=5), expand = c(0, 0), lim=c(0,40))
+dev.off()
+
+tspd <- foreach(i = c("b","w","c"), .combine=rbind) %do% {
+  model <- get(paste0(i,".glm"))
+  tspd.range <- seq(40,110,.01)[-c(1,length(seq(40,110,.01)))]
+  tspd.fit <- predict.glm(model,data.frame(egk=mean(model$data$egk),tvol=mean(model$data$tvol),tspd=tspd.range),type="response",se.fit=TRUE)
+  data.frame(x=tspd.range,y=tspd.fit[["fit"]],ymin=tspd.fit[["fit"]]-1.96*tspd.fit[["se.fit"]],ymax=tspd.fit[["fit"]]+1.96*tspd.fit[["se.fit"]],id=i)
+}
+tspd$id <- substring(paste0(tspd$id,"                 "),1,15)
+  
+tiff('figs/tspd.tif', pointsize = 10, compression = "lzw", res=300, width = 900, height = 1100)
+ggplot(tspd, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
+  geom_line(size=0.3, aes(linetype=id)) +
+  geom_ribbon(alpha=0.3) +
+  ylab("Likelihood of Collision") +
+  xlab("Traffic Speed (km/hour)") +
+  theme_bw() +
+  theme(legend.position="top", legend.title = element_blank(), legend.margin=margin(0,0,0,0), legend.box.margin=margin(5,-10,-10,0)) +
+  theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  scale_x_continuous(breaks=seq(40,110,by=10), expand = c(0, 0), lim=c(40,110))
+dev.off()
+
 
 #create dataframe for calibration metrics
 val.df <- data.frame("id"=rep(NA,12),"coef"=rep(NA,12),"coef_err"=rep(NA,12))

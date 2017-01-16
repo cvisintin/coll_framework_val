@@ -27,11 +27,33 @@ setkey(egk.preds,uid)
 bendigo.data <- as.data.table(read.csv(file="data/model_data_bendigo.csv"))
 setkey(bendigo.data,uid)
 
+bendigo.data.trunc <- as.data.table(read.csv(file="data/model_data_bendigo_trunc.csv"))
+setkey(bendigo.data.trunc,uid)
+bendigo.data.trunc$offset <- log(nrow(bendigo.data.trunc))
+
 western.data <- as.data.table(read.csv(file="data/model_data_western.csv"))
 setkey(western.data,uid)
 
+western.data.trunc <- as.data.table(read.csv(file="data/model_data_western_trunc.csv"))
+setkey(western.data.trunc,uid)
+western.data.trunc$offset <- log(nrow(western.data.trunc))
+
 crashstats.data <- as.data.table(read.csv(file="data/model_data_crashstats.csv"))
 setkey(crashstats.data,uid)
+crashstats.data$offset <- log(nrow(crashstats.data))
+
+#Create models with independent datasets
+b.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = bendigo.data.trunc)  #Fit regression model
+summary(b.glm)
+dev(b.glm)
+
+w.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = western.data.trunc)  #Fit regression model
+summary(w.glm)
+dev(w.glm)
+
+c.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = crashstats.data)  #Fit regression model
+summary(c.glm)
+dev(c.glm)
 
 #Create copy of model data for additional dataset creation
 wv.data <- copy(data)
@@ -145,7 +167,7 @@ summary(obwc.glm)
 dev(obwc.glm)
 #save(bwc.glm,file="output/bwc_glm")
 
-save(o.glm,ob.glm,ow.glm,oc.glm,obw.glm,owc.glm,ocb.glm,obwc.glm,file="output/glms")
+save(b.glm,w.glm,c.glm,o.glm,ob.glm,ow.glm,oc.glm,obw.glm,owc.glm,ocb.glm,obwc.glm,file="output/glms")
 
 #Make predictions
 preds <- as.data.table(cbind("uid"=wv.data$uid,"collrisk"=predict(o.glm, type="response")))
