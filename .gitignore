@@ -9,3 +9,5 @@ data/*.dbf
 data/*.prj
 data/*.shp
 data/*.shx
+
+*.doc
