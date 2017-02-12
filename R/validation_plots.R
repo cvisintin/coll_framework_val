@@ -29,6 +29,14 @@ roc <- function (obsdat, preddat){
 
 invcloglog <- function (x) {1-exp(-exp(x))}
 
+round_df <- function(df, digits) {
+  nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
+  
+  df[,nums] <- round(df[,nums], digits = digits)
+  
+  (df)
+}
+
 #create dataframe for mean predicted rates
 #data.id <- factor(c("o","ob","ow","oc","obw","owc","ocb","obwc"), levels=c("o","ob","ow","oc","obw","owc","ocb","obwc"))
 #preds.m <- data.frame(data.id,"collrisk_m"=apply(preds[,-1],2,mean),"collrisk_sd"=apply(preds[,-1],2,sd),"collrisk_min"=apply(preds[,-1],2,min),"collrisk_max"=apply(preds[,-1],2,max))
@@ -56,23 +64,36 @@ invcloglog <- function (x) {1-exp(-exp(x))}
 # dev.off()
 
 #create table of model fits for original collision datasets
-mod.sums <- data.frame(cbind(c("City of Bendigo","","","","","Western District","","","","","Crashstats (Victoria wide)","","","",""),
-                             rep(c("Intercept","EGK","TVOL","TVOL2","TSPD"),3),
-                             c(coef(b.glm),coef(w.glm),coef(c.glm)),
-                             c(summary(b.glm)$coefficients[, 2],summary(w.glm)$coefficients[, 2],summary(c.glm)$coefficients[, 2]),
-                             c(summary(b.glm)$coefficients[, 3],summary(w.glm)$coefficients[, 3],summary(c.glm)$coefficients[, 3]),
-                             c(summary(b.glm)$coefficients[, 4],summary(w.glm)$coefficients[, 4],summary(c.glm)$coefficients[, 4]),
-                             c(dev(b.glm),"","","","",dev(w.glm),"","","","",dev(c.glm),"","","","")
-                             )
+mod.sums <- data.frame(c("Wildlife Victoria","","","","","City of Bendigo","","","","","Western District","","","","","Crashstats (Victoria wide)","","","",""),
+                             rep(c("Intercept","EGK","TVOL","TVOL2","TSPD"),4),
+                             c(coef(coll.glm),coef(b.glm),coef(w.glm),coef(c.glm)),
+                             c(as.numeric(summary(coll.glm)$coefficients[, 2]),
+                               as.numeric(summary(b.glm)$coefficients[, 2]),
+                               as.numeric(summary(w.glm)$coefficients[, 2]),
+                               as.numeric(summary(c.glm)$coefficients[, 2])
+                               ),
+                             c(as.numeric(summary(coll.glm)$coefficients[, 3]),
+                               as.numeric(summary(b.glm)$coefficients[, 3]),
+                               as.numeric(summary(w.glm)$coefficients[, 3]),
+                               as.numeric(summary(c.glm)$coefficients[, 3])
+                               ),
+                             c(as.numeric(summary(coll.glm)$coefficients[, 4]),
+                               as.numeric(summary(b.glm)$coefficients[, 4]),
+                               as.numeric(summary(w.glm)$coefficients[, 4]),
+                               as.numeric(summary(c.glm)$coefficients[, 4])
+                               ),
+                             c(dev(coll.glm),"","","","",dev(b.glm),"","","","",dev(w.glm),"","","","",dev(c.glm),"","","","")
 )
 
 colnames(mod.sums) <- c("Dataset","Variable","Coefficient","Standard Error","Z-value","Pr(Z)","Deviance Explained")
+
+print(data.frame(lapply(mod.sums, function(y) if(is.numeric(y)) round(y, 3) else y)))
 
 write.csv(mod.sums, file="output/mod_sums.csv", row.names=FALSE)
 
 #plot results from original glm models using only validation datasets
 
-occ <- foreach(i = c("b","w","c"), .combine=rbind) %do% {
+occ <- foreach(i = c("coll","b","w","c"), .combine=rbind) %do% {
   model <- get(paste0(i,".glm"))
   occ.range <- seq(0,1,.0001)[-c(1,length(seq(0,1,.0001)))]
   occ.fit <- predict.glm(model,data.frame(egk=occ.range,tvol=mean(model$data$tvol),tspd=mean(model$data$tspd)),type="response",se.fit=TRUE)
@@ -80,9 +101,10 @@ occ <- foreach(i = c("b","w","c"), .combine=rbind) %do% {
 }
 occ$id <- substring(paste0(occ$id,"                 "),1,15)
 
+
 tiff('figs/occ.tif', pointsize = 10, compression = "lzw", res=300, width = 900, height = 1100)
 ggplot(occ, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
-  geom_line(size=0.3, aes(linetype=id)) +
+  geom_line(size=0.3, aes(colour=id)) +
   geom_ribbon(alpha=0.3) +
   ylab("Likelihood of Collision") +
   xlab("Likelihood of Species Occurrence") +
@@ -91,13 +113,13 @@ ggplot(occ, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
   theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
-  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-  scale_y_continuous(breaks=seq(0,.1,by=.02), expand = c(0, 0), lim=c(0,.1)) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.12)) +
+  scale_y_continuous(breaks=seq(0,.12,by=.02), expand = c(0, 0), lim=c(0,.12)) +
   scale_x_continuous(breaks=seq(0,1,by=.1), expand = c(0, 0), lim=c(0,1))
 dev.off()
 
 
-tvol <- foreach(i = c("b","w","c"), .combine=rbind) %do% {
+tvol <- foreach(i = c("coll","b","w","c"), .combine=rbind) %do% {
   model <- get(paste0(i,".glm"))
   tvol.range <- seq(0,40000,10)[-c(1,length(seq(0,40000,10)))]
   tvol.fit <- predict.glm(model,data.frame(egk=mean(model$data$egk),tvol=tvol.range,tspd=mean(model$data$tspd)),type="response",se.fit=TRUE)
@@ -107,7 +129,7 @@ tvol$id <- substring(paste0(tvol$id,"                 "),1,15)
   
 tiff('figs/tvol.tif', pointsize = 10, compression = "lzw", res=300, width = 900, height = 1100)
 ggplot(tvol, aes(x=x/1000,y=y,ymin=ymin,ymax=ymax,group=id)) +
-  geom_line(size=0.3, aes(linetype=id)) +
+  geom_line(size=0.3, aes(colour=id)) +
   geom_ribbon(alpha=0.3) +
   ylab("Likelihood of Collision") +
   xlab("Traffic Volume (1000 vehicles/day)") +
@@ -120,7 +142,7 @@ ggplot(tvol, aes(x=x/1000,y=y,ymin=ymin,ymax=ymax,group=id)) +
   scale_x_continuous(breaks=seq(0,40,by=5), expand = c(0, 0), lim=c(0,40))
 dev.off()
 
-tspd <- foreach(i = c("b","w","c"), .combine=rbind) %do% {
+tspd <- foreach(i = c("coll","b","w","c"), .combine=rbind) %do% {
   model <- get(paste0(i,".glm"))
   tspd.range <- seq(40,110,.01)[-c(1,length(seq(40,110,.01)))]
   tspd.fit <- predict.glm(model,data.frame(egk=mean(model$data$egk),tvol=mean(model$data$tvol),tspd=tspd.range),type="response",se.fit=TRUE)
@@ -130,7 +152,7 @@ tspd$id <- substring(paste0(tspd$id,"                 "),1,15)
   
 tiff('figs/tspd.tif', pointsize = 10, compression = "lzw", res=300, width = 900, height = 1100)
 ggplot(tspd, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
-  geom_line(size=0.3, aes(linetype=id)) +
+  geom_line(size=0.3, aes(colour=id)) +
   geom_ribbon(alpha=0.3) +
   ylab("Likelihood of Collision") +
   xlab("Traffic Speed (km/hour)") +
@@ -198,17 +220,31 @@ yp_bins <- foreach(i = val.df$id, .combine=rbind) %do% {
   cbind(yp, "coef1"=calib$coefficients[1], "coef2"=calib$coefficients[2], "id"=as.character(i))
 }
 
+plotPal <- c("#77B9FF",
+             "#598BBF",
+             "#3B5C7F",
+             "#BF544B",
+             "#7F3832",
+             "#9ABF78",
+             "#667F50",
+             "#BFAB64",
+             "#7F7243",
+             "#BF7EBD",
+             "#FFA8FC",
+             "#7F547E")
+
 png('figs/calib2.png', pointsize = 6, res=300, width = 1200, height = 900, bg='transparent')
 ggplot() +
   #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
   geom_line(data=yp_bins, aes(y=invcloglog(coef1+coef2*log(p)),x=p, colour=id)) +
   #geom_pointrange(data=plot.info, aes(x=median_p, y=prop_coll, ymin=prop_lo, ymax=prop_hi), size = 0.2, inherit.aes=FALSE) +
   #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-  geom_segment(aes(x = 0, y = 0, xend = 0.35, yend = 0.35), linetype=2, size=0.1, inherit.aes=FALSE) +
+  #geom_segment(aes(x = 0, y = 0, xend = 0.04, yend = 0.04), linetype=2, size=0.1, inherit.aes=FALSE) +
   #coord_flip() +
   ylab("Observed Rate (proportion in one year)") +
   xlab("Predicted Rate (proportion in one year)") +
   theme_bw() +
+  scale_colour_manual(values=plotPal) +
   theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +

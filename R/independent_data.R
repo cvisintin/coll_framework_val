@@ -115,7 +115,9 @@ bendigo.roads <- as.data.table(dbGetQuery(con,"
                                   OR
                                   p.sla_code11 = '235052625'
                                   OR
-                                  p.sla_code11 = '235052626');
+                                  p.sla_code11 = '235052626'
+                                  OR 
+		                              SLA_CODE11 =  '235102628');
                                   "))
 setkey(bendigo.roads,uid)
 
@@ -140,7 +142,8 @@ western.roads <- as.data.table(dbGetQuery(con,"
                                   (SELECT
                                   uid, ST_ClosestPoint(geom, ST_Centroid(geom)) AS geom
                                   FROM
-                                  gis_victoria.vic_gda9455_roads_state) AS r, gis_victoria.vic_gda9455_admin_sla AS p
+                                  gis_victoria.vic_gda9455_roads_state
+                                  WHERE class_code <= 2) AS r, gis_victoria.vic_gda9455_admin_sla AS p
                                   WHERE
                                   ST_Contains(p.geom, r.geom)
                                   AND

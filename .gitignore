@@ -2,12 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-
 data/2012pm01/*
-
 data/*.dbf
 data/*.prj
 data/*.shp
 data/*.shx
-
 *.doc
+Collision_Validation_EGK.doc
