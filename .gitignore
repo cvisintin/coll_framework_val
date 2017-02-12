@@ -2,6 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+coll_framework_val.Rproj
+*.qgs
 data/2012pm01/*
 data/*.dbf
 data/*.prj
