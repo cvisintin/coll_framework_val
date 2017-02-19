@@ -1,6 +1,7 @@
 require(data.table)
 require(RPostgreSQL)
 require(plyr)
+require(xtable)
 
 "roc" <- function (obsdat, preddat){
   if (length(obsdat) != length(preddat)) 
@@ -54,6 +55,32 @@ dev(w.glm)
 c.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = crashstats.data)  #Fit regression model
 summary(c.glm)
 dev(c.glm)
+
+#model data with glm and summarize model output data (for latex table)
+glm_sums <- data.frame(character(),character(),numeric(),numeric(),numeric(),numeric(),numeric(),stringsAsFactors=FALSE,row.names=NULL)
+colnames(glm_sums) <- c("Dataset","Variable","Coefficient","Standard Error","$Z\\text{-value}$","$\\PRZ$","Deviance Explained")
+model.list <- list(b.glm,w.glm,c.glm)
+name.list <- list("City of Bendigo","Western District","Crashstats")
+for (i in 1:3) {
+  x.names <- c("Intercept", "EGK", "TVOL", "TVOL$^2$", "TSPD")
+  x.species <- c(name.list[[i]], NA, NA, NA, NA)
+  x.coef <- signif(coef(summary(model.list[[i]]))[,1],digits=4)
+  x.se <- signif(coef(summary(model.list[[i]]))[,2],digits=4)
+  x.zvalue <- signif(coef(summary(model.list[[i]]))[,3],digits=4)
+  x.prz <- signif(coef(summary(model.list[[i]]))[,4],digits=2)
+  x.prz <- sapply(x.prz, function(x) ifelse(x < 2e-16, 2e-16, x))
+  x.dev <- c(round(((model.list[[i]]$null.deviance - model.list[[i]]$deviance)/model.list[[i]]$null.deviance)*100,2), NA, NA, NA, NA)
+  x.all <- data.frame(cbind(x.species,x.names,x.coef,x.se,x.zvalue,x.prz,x.dev),stringsAsFactors=FALSE,row.names=NULL)
+  colnames(x.all) <- c("Dataset","Variable","Coefficient","Standard Error","$Z\\text{-value}$","$\\PRZ$","Deviance Explained")
+
+  newrow = rep(NA,length(x.all))
+  glm_sums <- rbind(glm_sums, x.all, newrow)
+
+  rm(x.names,x.coef,x.se,x.zvalue,x.prz,x.dev,x.species)
+  rm(x.all)
+  rm(newrow)
+}
+print(xtable(glm_sums), include.rownames=FALSE, sanitize.text.function=function(x){x}, floating=FALSE)
 
 #Create copy of model data for additional dataset creation
 wv.data <- copy(data)
