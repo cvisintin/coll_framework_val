@@ -7,10 +7,10 @@ con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres1
 
 roads <- as.data.table(dbGetQuery(con,"
   SELECT
-                                  r.uid as uid, ST_X(r.geom) AS x, ST_Y(r.geom) AS y
+                                  r.uid as uid, r.length/1000 AS length, ST_X(r.geom) AS x, ST_Y(r.geom) AS y
                                   FROM
                                   (SELECT
-                                  uid, ST_ClosestPoint(geom, ST_Centroid(geom)) AS geom
+                                  uid, ST_Length(geom) AS length, ST_ClosestPoint(geom, ST_Centroid(geom)) AS geom
                                   FROM
                                   gis_victoria.vic_gda9455_roads_state) AS r
                                   "))
@@ -96,10 +96,10 @@ write.csv(data, file = "data/model_data_crashstats.csv", row.names=FALSE)
 ##########################Datasets confined to survey boundaries###################
 bendigo.roads <- as.data.table(dbGetQuery(con,"
                                   SELECT
-                                  r.uid as uid, ST_X(r.geom) AS x, ST_Y(r.geom) AS y
+                                  r.uid as uid, r.length/1000 AS length, ST_X(r.geom) AS x, ST_Y(r.geom) AS y
                                   FROM
                                   (SELECT
-                                  uid, ST_ClosestPoint(geom, ST_Centroid(geom)) AS geom
+                                  uid, ST_Length(geom) AS length, ST_ClosestPoint(geom, ST_Centroid(geom)) AS geom
                                   FROM
                                   gis_victoria.vic_gda9455_roads_state) AS r, gis_victoria.vic_gda9455_admin_sla AS p
                                   WHERE
@@ -117,7 +117,7 @@ bendigo.roads <- as.data.table(dbGetQuery(con,"
                                   OR
                                   p.sla_code11 = '235052626'
                                   OR 
-		                              SLA_CODE11 =  '235102628');
+		                              p.sla_code11 =  '235102628');
                                   "))
 setkey(bendigo.roads,uid)
 
@@ -137,10 +137,10 @@ write.csv(data, file = "data/model_data_bendigo_trunc.csv", row.names=FALSE)
 
 western.roads <- as.data.table(dbGetQuery(con,"
                                   SELECT
-                                  r.uid as uid, ST_X(r.geom) AS x, ST_Y(r.geom) AS y
+                                  r.uid as uid, r.length/1000 AS length, ST_X(r.geom) AS x, ST_Y(r.geom) AS y
                                   FROM
                                   (SELECT
-                                  uid, ST_ClosestPoint(geom, ST_Centroid(geom)) AS geom
+                                  uid, ST_Length(geom) AS length, ST_ClosestPoint(geom, ST_Centroid(geom)) AS geom
                                   FROM
                                   gis_victoria.vic_gda9455_roads_state
                                   WHERE class_code <= 2) AS r, gis_victoria.vic_gda9455_admin_sla AS p
