@@ -40,8 +40,9 @@ load(file="output/glm_sums_iag")
 
 "range0_1" <- function(x){(x-min(x))/(max(x)-min(x))}
 
+data.id <- factor(c("o","ob","ow","oc","obw","owc","ocb","obwc"), levels=c("o","ob","ow","oc","obw","owc","ocb","obwc"))
+
 #create dataframe for mean predicted rates
-#data.id <- factor(c("o","ob","ow","oc","obw","owc","ocb","obwc"), levels=c("o","ob","ow","oc","obw","owc","ocb","obwc"))
 #preds.m <- data.frame(data.id,"collrisk_m"=apply(preds[,-1],2,mean),"collrisk_sd"=apply(preds[,-1],2,sd),"collrisk_min"=apply(preds[,-1],2,min),"collrisk_max"=apply(preds[,-1],2,max))
 #preds.m$total.coll <- as.numeric(total.coll)
 
@@ -91,7 +92,6 @@ mod.sums <- data.frame(c("Wildlife Victoria","","","","","City of Bendigo","",""
 colnames(mod.sums) <- c("Dataset","Variable","Coefficient","Standard Error","Z-value","Pr(Z)","Deviance Explained")
 
 print(data.frame(lapply(mod.sums, function(y) if(is.numeric(y)) round(y, 3) else y)))
-
 
 latex.data <- data.frame(lapply(mod.sums, function(y) if(is.numeric(y)) round(y, 4) else y))
 latex.data$Pr.Z. <- lapply(latex.data$Pr.Z., function(y) if(y<=.0001) '$<$.0001*' else y)
@@ -263,7 +263,7 @@ ggplot() +
 dev.off()
 
 #create dataframe for iag calibration metrics
-val.iag.df <- data.frame("id"=unlist(lapply(data.id, function(x) paste0(x,"-iag"))),"coef"=rep(NA,8),"coef_err"=rep(NA,8),"dev"=val.iag.dev)
+val.iag.df <- data.frame("id"=data.id,"coef"=rep(NA,8),"coef_err"=rep(NA,8),"dev"=val.iag.dev)
 val.iag.df[1,2:3] <- c(coef(o.val.iag)[2,1],coef(o.val.iag)[2,2])
 val.iag.df[2,2:3] <- c(coef(ob.val.iag)[2,1],coef(ob.val.iag)[2,2])
 val.iag.df[3,2:3] <- c(coef(ow.val.iag)[2,1],coef(ow.val.iag)[2,2])
@@ -275,20 +275,20 @@ val.iag.df[8,2:3] <- c(coef(obwc.val.iag)[2,1],coef(obwc.val.iag)[2,2])
 val.iag.df$coef <- as.numeric(val.iag.df$coef)
 val.iag.df$coef_err <- as.numeric(val.iag.df$coef_err)
 val.iag.df$dev <- as.numeric(val.iag.df$dev)
-val.iag.df$id <- factor(val.iag.df$id, levels=unlist(lapply(data.id, function(x) paste0(x,"-iag"))))
+#val.iag.df$id <- factor(val.iag.df$id, levels=unlist(lapply(data.id, function(x) paste0(x,"-iag"))))
 
 #plot iag calibration and performance with varying combinations of data
 png('figs/calib_iag.png', pointsize = 6, res=300, width = 1500, height = 900, bg='transparent')
 ggplot() +
   #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
   #geom_line(data=val.df, aes(y=,x=)) +
-  geom_pointrange(data=val.iag.df, aes(x=id, y=coef, ymin=coef-coef_err, ymax=coef+coef_err), size=0.1) +
+  geom_point(data=val.iag.df, aes(x=id, y=coef), size=1) +
   #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
   #geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
   #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
   #coord_flip() +
   ylab("Calibration coefficient") +
-  xlab("Data combinations used for validation") +
+  xlab("Data combinations used for modelling") +
   theme_bw() +
   theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
