@@ -195,7 +195,7 @@ val.df$coef <- as.numeric(val.df$coef)
 val.df$coef_err <- as.numeric(val.df$coef_err)
 
 #plot calibration with varying combinations of data
-png('figs/calib.png', pointsize = 6, res=300, width = 1500, height = 900, bg='transparent')
+png('figs/calib.png', pointsize = 6, res=300, width = 1700, height = 900, bg='transparent')
 ggplot() +
   #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
   #geom_line(data=val.df, aes(y=,x=)) +
@@ -212,7 +212,7 @@ ggplot() +
   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
   theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-  theme(text = element_text(size = 8))
+  theme(text = element_text(size = 10))
 dev.off()
 
 b.data <- bendigo.data
@@ -243,7 +243,7 @@ plotPal <- c("#77B9FF",
              "#FFA8FC",
              "#7F547E")
 
-png('figs/calib2.png', pointsize = 6, res=300, width = 1200, height = 900, bg='transparent')
+png('figs/calib2.png', pointsize = 6, res=300, width = 1300, height = 1000, bg='transparent')
 ggplot() +
   #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
   geom_line(data=yp_bins, aes(y=invcloglog(coef1+coef2*log(p)),x=p, colour=id)) +
@@ -278,7 +278,7 @@ val.iag.df$dev <- as.numeric(val.iag.df$dev)
 #val.iag.df$id <- factor(val.iag.df$id, levels=unlist(lapply(data.id, function(x) paste0(x,"-iag"))))
 
 #plot iag calibration and performance with varying combinations of data
-png('figs/calib_iag.png', pointsize = 6, res=300, width = 1500, height = 900, bg='transparent')
+png('figs/calib_iag.png', pointsize = 6, res=300, width = 1700, height = 900, bg='transparent')
 ggplot() +
   #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
   #geom_line(data=val.df, aes(y=,x=)) +
@@ -297,7 +297,7 @@ ggplot() +
   theme(text = element_text(size = 8))
 dev.off()
 
-png('figs/dev_iag.png', pointsize = 6, res=300, width = 1500, height = 900, bg='transparent')
+png('figs/dev_iag.png', pointsize = 6, res=300, width = 1700, height = 900, bg='transparent')
 ggplot() +
   #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
   #geom_line(data=val.df, aes(y=,x=)) +
@@ -313,7 +313,7 @@ ggplot() +
   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
   theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-  theme(text = element_text(size = 8))
+  theme(text = element_text(size = 10))
 dev.off()
 
 #######################################################################################
