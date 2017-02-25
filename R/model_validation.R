@@ -221,7 +221,7 @@ save(preds, file="output/preds")
 drv <- dbDriver("PostgreSQL")  #Specify a driver for postgreSQL type database
 con <- dbConnect(drv, dbname="qaeco_spatial", user="qaeco", password="Qpostgres15", host="boab.qaeco.com", port="5432")  #Connection to database server on Boab
 
-dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk"), value = preds[,.(uid,collrisk)], row.names=FALSE, overwrite=TRUE)
+dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk"), value = preds[,.(uid,"collrisk"=o_collrisk)], row.names=FALSE, overwrite=TRUE)
 
 dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_b"), value = preds[,.(uid,"collrisk"=ob_collrisk)], row.names=FALSE, overwrite=TRUE)
 dbWriteTable(con, c("gis_victoria", "vic_nogeom_roads_egkcollrisk_w"), value = preds[,.(uid,"collrisk"=ow_collrisk)], row.names=FALSE, overwrite=TRUE)
