@@ -151,7 +151,7 @@ obwc.model.data[crashstats.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 obwc.model.data[coll>1,coll:=1]
 
 #Sum total collision for each data combination
-all.data <- list(wv.data,ob.model.data,ow.model.data,oc.model.data,obw.model.data,owc.model.data,ocb.model.data,obwc.model.data)
+all.data <- list(wv.data,bendigo.data,western.data,crashstats.data,ob.model.data,ow.model.data,oc.model.data,obw.model.data,owc.model.data,ocb.model.data,obwc.model.data)
 total.coll <- lapply(all.data, function(x) sum(x[coll==1,coll]))
 
 save(all.data,total.coll,file="data/all_data")
