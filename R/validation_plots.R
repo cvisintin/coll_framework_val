@@ -106,16 +106,16 @@ occ <- foreach(i = c("o","b","w","c"), .combine=rbind) %do% {
   occ.fit <- predict.glm(model,data.frame(egk=occ.range,tvol=mean(model$data$tvol),tspd=mean(model$data$tspd)),type="response",se.fit=TRUE)
   data.frame(x=occ.range,y=range0_1(occ.fit[["fit"]]),ymin=range0_1(occ.fit[["fit"]]-1.96*occ.fit[["se.fit"]]),ymax=range0_1(occ.fit[["fit"]]+1.96*occ.fit[["se.fit"]]),id=i)
 }
-occ$id <- substring(paste0(occ$id,"                 "),1,15)
-occ$id <- factor(occ$id,levels=c("o              ","b              ","w              ","c              "))
+occ$id <- substring(paste0(occ$id,"         "),1,15)
+occ$id <- factor(occ$id,levels=c("o       ","b              ","w              ","c              "))
 
 
 tiff('figs/occ.tif', pointsize = 10, compression = "lzw", res=300, width = 900, height = 1000)
 ggplot(occ, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
-  geom_line(size=0.3, aes(colour=id, linetype=id)) +
+  geom_line(size=0.8, aes(colour=id, linetype=id)) +
   #geom_ribbon(alpha=0.3) +
-  ylab("Likelihood of Collision") +
-  xlab("Likelihood of Species Occurrence") +
+  ylab("RELATIVE COLLISION RATE (RESCALED)") +
+  xlab("LIKELIHOOD OF SPECIES OCCURRENCE") +
   theme_bw() +
   theme(legend.position="top", legend.title = element_blank(), legend.margin=margin(0,0,0,0), legend.box.margin=margin(5,-10,-10,0)) +
   theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
@@ -357,3 +357,117 @@ dev.off()
 #   theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
 #   theme(text = element_text(size = 10))
 # dev.off()
+
+#plot results from original glm models using only validation datasets for completion talk
+occ <- foreach(i = c("o","b","w","c"), .combine=rbind) %do% {
+  model <- get(paste0(i,".glm"))
+  occ.range <- seq(0,1,.001)[-c(1,length(seq(0,1,.001)))]
+  occ.fit <- predict.glm(model,data.frame(egk=occ.range,tvol=mean(model$data$tvol),tspd=mean(model$data$tspd)),type="response",se.fit=TRUE)
+  data.frame(x=occ.range,y=range0_1(occ.fit[["fit"]]),ymin=range0_1(occ.fit[["fit"]]-1.96*occ.fit[["se.fit"]]),ymax=range0_1(occ.fit[["fit"]]+1.96*occ.fit[["se.fit"]]),id=i)
+}
+occ$id <- paste0(occ$id,"         ")
+occ$id <- factor(occ$id,levels=occ$id)
+
+png('/home/casey/Research/Projects/PhD_Thesis/completion_talk/graphics/occ_kv.png', pointsize = 16, res=300, width = 1000, height = 900)
+ggplot(occ, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
+  geom_line(size=0.8, aes(colour=id, linetype=id)) +
+  ylab("RELATIVE COLLISION RATE (RESCALED)") +
+  xlab("LIKELIHOOD OF SPECIES OCCURRENCE") +
+  theme_bw() +
+  theme(legend.position="top", legend.title = element_blank(), legend.margin=margin(0,0,0,0), legend.box.margin=margin(5,-10,-10,0)) +
+  theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.12)) +
+  theme(text = element_text(size = 8)) +
+  scale_x_continuous(breaks=seq(0,1,by=.1), expand = c(0, 0), lim=c(0,1))
+dev.off()
+
+
+tvol <- foreach(i = c("o","b","w","c"), .combine=rbind) %do% {
+  model <- get(paste0(i,".glm"))
+  tvol.range <- seq(0,40000,20)[-c(1,length(seq(0,40000,20)))]
+  tvol.fit <- predict.glm(model,data.frame(egk=mean(model$data$egk),tvol=tvol.range,tspd=mean(model$data$tspd)),type="response",se.fit=TRUE)
+  data.frame(x=tvol.range,y=range0_1(tvol.fit[["fit"]]),ymin=range0_1(tvol.fit[["fit"]]-1.96*tvol.fit[["se.fit"]]),ymax=range0_1(tvol.fit[["fit"]]+1.96*tvol.fit[["se.fit"]]),id=i)
+}
+tvol$id <- paste0(tvol$id,"         ")
+tvol$id <- factor(tvol$id,levels=tvol$id)
+
+png('/home/casey/Research/Projects/PhD_Thesis/completion_talk/graphics/tvol_kv.png', pointsize = 16, res=300, width = 1000, height = 900)
+ggplot(tvol, aes(x=x/1000,y=y,ymin=ymin,ymax=ymax,group=id)) +
+  geom_line(size=0.8, aes(colour=id, linetype=id)) +
+  #geom_ribbon(alpha=0.3) +
+  ylab("") +
+  xlab("TRAFFIC VOLUME (1000 VEHICLES/DAY)") +
+  theme_bw() +
+  theme(legend.position="top", legend.title = element_blank(), legend.margin=margin(0,0,0,0), legend.box.margin=margin(5,-10,-10,0)) +
+  theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  theme(text = element_text(size = 8)) +
+  scale_x_continuous(breaks=seq(0,40,by=5), expand = c(0, 0), lim=c(0,40))
+dev.off()
+
+tspd <- foreach(i = c("o","b","w","c"), .combine=rbind) %do% {
+  model <- get(paste0(i,".glm"))
+  tspd.range <- seq(40,110,.1)[-c(1,length(seq(40,110,.1)))]
+  tspd.fit <- predict.glm(model,data.frame(egk=mean(model$data$egk),tvol=mean(model$data$tvol),tspd=tspd.range),type="response",se.fit=TRUE)
+  data.frame(x=tspd.range,y=range0_1(tspd.fit[["fit"]]),ymin=range0_1(tspd.fit[["fit"]]-1.96*tspd.fit[["se.fit"]]),ymax=range0_1(tspd.fit[["fit"]]+1.96*tspd.fit[["se.fit"]]),id=i)
+}
+tspd$id <- paste0(tspd$id,"         ")
+tspd$id <- factor(tspd$id,levels=tspd$id)
+
+png('/home/casey/Research/Projects/PhD_Thesis/completion_talk/graphics/tspd_kv.png', pointsize = 16, res=300, width = 1000, height = 900)
+ggplot(tspd, aes(x=x,y=y,ymin=ymin,ymax=ymax,group=id)) +
+  geom_line(size=0.8, aes(colour=id, linetype=id)) +
+  #geom_ribbon(alpha=0.3) +
+  ylab("") +
+  xlab("TRAFFIC SPEED (KM/HOUR)") +
+  theme_bw() +
+  theme(legend.position="top", legend.title = element_blank(), legend.margin=margin(0,0,0,0), legend.box.margin=margin(5,-10,-10,0)) +
+  theme(plot.margin=unit(c(-.3,.5,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  theme(text = element_text(size = 8)) +
+  scale_x_continuous(breaks=seq(40,110,by=10), expand = c(0, 0), lim=c(40,110))
+dev.off()
+
+png('/home/casey/Research/Projects/PhD_Thesis/completion_talk/graphics/calib_iag.png', pointsize = 16, res=300, width = 1000, height = 900)
+ggplot() +
+  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
+  #geom_line(data=val.df, aes(y=,x=)) +
+  geom_point(data=val.iag.df, aes(x=id, y=coef), size=1) +
+  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
+  #geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
+  #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
+  #coord_flip() +
+  ylab("CALIBRATION COEFFICIENT") +
+  xlab("DATA COMBINATIONS USED FOR MODELLING") +
+  theme_bw() +
+  theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  theme(text = element_text(size = 8))
+dev.off()
+
+png('/home/casey/Research/Projects/PhD_Thesis/completion_talk/graphics/dev_iag.png', pointsize = 16, res=300, width = 1000, height = 900)
+ggplot() +
+  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
+  #geom_line(data=val.df, aes(y=,x=)) +
+  geom_point(data=val.iag.df, aes(x=id, y=dev), size=1) +
+  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
+  #geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
+  #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
+  #coord_flip() +
+  ylab("PERCENT REDUCTION IN DEVIANCE") +
+  xlab("DATA COMBINATIONS USED FOR MODELLING") +
+  theme_bw() +
+  theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
+  theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
+  theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
+  theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
+  theme(text = element_text(size = 8))
+dev.off()
