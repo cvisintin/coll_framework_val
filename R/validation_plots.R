@@ -294,7 +294,7 @@ ggplot() +
   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
   theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-  theme(text = element_text(size = 8))
+  theme(text = element_text(size = 10))
 dev.off()
 
 png('figs/dev_iag.png', pointsize = 6, res=300, width = 1700, height = 900, bg='transparent')
