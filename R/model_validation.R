@@ -90,22 +90,16 @@ setkey(wv.data,uid)
 #Combine existing data with Bendigo
 ob.model.data <- copy(bendigo.data)
 ob.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-# sum(b.model.data$coll>1)
-# 21
 ob.model.data[coll>1,coll:=1]
 
 #Combine existing data with Western
 ow.model.data <- copy(western.data)
 ow.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-# sum(w.model.data$coll>1)
-# 31
 ow.model.data[coll>1,coll:=1]
 
 #Combine existing data with Crashstats
 oc.model.data <- copy(crashstats.data)
 oc.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-# sum(c.model.data$coll>1)
-# 47
 oc.model.data[coll>1,coll:=1]
 
 #Combine existing data with Bendigo & Western
@@ -114,8 +108,6 @@ setkey(obw.model.data,uid)
 obw.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 setkey(obw.model.data,uid)
 obw.model.data[western.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-# sum(bw.model.data$coll>1)
-# 52
 obw.model.data[coll>1,coll:=1]
 
 #Combine existing data with Western & Crashstats
@@ -124,8 +116,6 @@ setkey(owc.model.data,uid)
 owc.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 setkey(owc.model.data,uid)
 owc.model.data[crashstats.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-# sum(wc.model.data$coll>1)
-# 88
 owc.model.data[coll>1,coll:=1]
 
 #Combine existing data with Crashstats & Bendigo
@@ -134,8 +124,6 @@ setkey(ocb.model.data,uid)
 ocb.model.data[wv.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 setkey(ocb.model.data,uid)
 ocb.model.data[bendigo.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-# sum(cb.model.data$coll>1)
-# 71
 ocb.model.data[coll>1,coll:=1]
 
 #Combine existing data with Bendigo, Western & Crashstats
@@ -146,8 +134,6 @@ setkey(obwc.model.data,uid)
 obwc.model.data[western.data, `:=`(uid = i.uid, coll = coll + i.coll)]
 setkey(obwc.model.data,uid)
 obwc.model.data[crashstats.data, `:=`(uid = i.uid, coll = coll + i.coll)]
-# sum(bwc.model.data$coll>1)
-# 112
 obwc.model.data[coll>1,coll:=1]
 
 #Sum total collision for each data combination
@@ -160,37 +146,30 @@ save(all.data,total.coll,file="data/all_data")
 ob.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = ob.model.data)  #Fit regression model
 summary(ob.glm)  #Examine fit of regression model
 dev(ob.glm)  #Report reduction in deviance
-#save(b.glm,file="output/b_glm")
 
 ow.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = ow.model.data)  #Fit regression model
 summary(ow.glm)
 dev(ow.glm)
-#save(w.glm,file="output/w_glm")
 
 oc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = oc.model.data)  #Fit regression model
 summary(oc.glm)
 dev(oc.glm)
-#save(c.glm,file="output/c_glm")
 
 obw.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = obw.model.data)  #Fit regression model
 summary(obw.glm)
 dev(obw.glm)
-#save(bw.glm,file="output/bw_glm")
 
 owc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = owc.model.data)  #Fit regression model
 summary(owc.glm)
 dev(owc.glm)
-#save(wc.glm,file="output/wc_glm")
 
 ocb.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = ocb.model.data)  #Fit regression model
 summary(ocb.glm)
 dev(ocb.glm)
-#save(cb.glm,file="output/cb_glm")
 
 obwc.glm <- glm(formula = coll ~ log(egk) + log(tvol) + I(log(tvol)^2) + log(tspd), family=binomial(link = "cloglog"), data = obwc.model.data)  #Fit regression model
 summary(obwc.glm)
 dev(obwc.glm)
-#save(bwc.glm,file="output/bwc_glm")
 
 save(b.glm,w.glm,c.glm,o.glm,ob.glm,ow.glm,oc.glm,obw.glm,owc.glm,ocb.glm,obwc.glm,file="output/glms")
 
@@ -208,8 +187,6 @@ preds <- as.data.table(cbind("uid"=wv.data$uid,"collrisk"=predict(o.glm, type="r
 id <- c("ob","ow","oc","obw","owc","ocb","obwc")
 
 for(i in id){
-  #uid <- mget(paste0(i,".model.data$uid"))
-  #assign(paste0(i,"_collrisk"),predict(get(paste0(i,".glm")), type="response")
   preds <- cbind(preds,predict(get(paste0(i,".glm")), type="response"))
   colnames(preds)[length(colnames(preds))] <- paste0(i,"_collrisk")
 }
@@ -338,9 +315,6 @@ val.data.towns <- merge(ob.preds.towns[,sum(exp(collrisk)),by="towns"],data.town
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
-#no.towns.coll <- val.data.towns[!data.towns,]
-#no.match.towns.coll <- data.towns[!val.data.towns,]
-
 val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
@@ -369,9 +343,6 @@ setkey(ow.preds.towns,towns)
 val.data.towns <- merge(ow.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
-
-#no.towns.coll <- val.data.towns[!data.towns,]
-#no.match.towns.coll <- data.towns[!val.data.towns,]
 
 val.data.iag <- na.omit(val.data.towns)
 
@@ -402,9 +373,6 @@ val.data.towns <- merge(oc.preds.towns[,sum(exp(collrisk)),by="towns"],data.town
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
-#no.towns.coll <- val.data.towns[!data.towns,]
-#no.match.towns.coll <- data.towns[!val.data.towns,]
-
 val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
@@ -433,9 +401,6 @@ setkey(obw.preds.towns,towns)
 val.data.towns <- merge(obw.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
-
-#no.towns.coll <- val.data.towns[!data.towns,]
-#no.match.towns.coll <- data.towns[!val.data.towns,]
 
 val.data.iag <- na.omit(val.data.towns)
 
@@ -466,9 +431,6 @@ val.data.towns <- merge(owc.preds.towns[,sum(exp(collrisk)),by="towns"],data.tow
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
-#no.towns.coll <- val.data.towns[!data.towns,]
-#no.match.towns.coll <- data.towns[!val.data.towns,]
-
 val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
@@ -498,9 +460,6 @@ val.data.towns <- merge(ocb.preds.towns[,sum(exp(collrisk)),by="towns"],data.tow
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
 
-#no.towns.coll <- val.data.towns[!data.towns,]
-#no.match.towns.coll <- data.towns[!val.data.towns,]
-
 val.data.iag <- na.omit(val.data.towns)
 
 val.data.iag$nyears <- 3
@@ -529,9 +488,6 @@ setkey(obwc.preds.towns,towns)
 val.data.towns <- merge(obwc.preds.towns[,sum(exp(collrisk)),by="towns"],data.towns, by="towns", all.x=TRUE)
 val.data.towns$ncoll[is.na(val.data.towns$ncoll)] <- 0
 colnames(val.data.towns)[2] <- "expcoll"
-
-#no.towns.coll <- val.data.towns[!data.towns,]
-#no.match.towns.coll <- data.towns[!val.data.towns,]
 
 val.data.iag <- na.omit(val.data.towns)
 

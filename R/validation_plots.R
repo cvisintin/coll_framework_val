@@ -1,7 +1,5 @@
 require(ggplot2)
 require(plyr)
-require(plotROC)
-require(reshape)
 require(foreach)
 require(xtable)
 
@@ -41,31 +39,6 @@ load(file="output/glm_sums_iag")
 "range0_1" <- function(x){(x-min(x))/(max(x)-min(x))}
 
 data.id <- factor(c("o","ob","ow","oc","obw","owc","ocb","obwc"), levels=c("o","ob","ow","oc","obw","owc","ocb","obwc"))
-
-#create dataframe for mean predicted rates
-#preds.m <- data.frame(data.id,"collrisk_m"=apply(preds[,-1],2,mean),"collrisk_sd"=apply(preds[,-1],2,sd),"collrisk_min"=apply(preds[,-1],2,min),"collrisk_max"=apply(preds[,-1],2,max))
-#preds.m$total.coll <- as.numeric(total.coll)
-
-#preds.m2 <- melt(preds[sample(nrow(preds), 100), ], id.vars=c("uid"))
-
-#plot predictions with varying combinations of data
-# png('figs/preds.png', pointsize = 6, res=300, width = 900, height = 900, bg='transparent')
-# ggplot() +
-#   geom_point(data=preds.m, aes(x=data.id, y=collrisk_m)) +
-#   #geom_pointrange(data=preds.m, aes(x=data.id, y=collrisk_m, ymin=collrisk_m-collrisk_sd, ymax=collrisk_m+collrisk_sd)) +
-#   geom_text(data=preds.m, aes(x=data.id, y=collrisk_m, label=total.coll),hjust=0.5, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-#   #geom_segment(aes(x = 0, y = 0, xend = .04, yend = .04), linetype=2, size=0.1, inherit.aes=FALSE) +
-#   #coord_flip() +
-#   scale_y_continuous(breaks=seq(0.0065,0.0095,by=.0005), expand = c(0, 0), lim=c(0.0065,0.0095)) +
-#   ylab("Predicted mean rate (across entire road network)") +
-#   xlab("Data combinations used for modelling") +
-#   theme_bw() +
-#   theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
-#   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
-#   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
-#   theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-#   theme(text = element_text(size = 8))
-# dev.off()
 
 #create table of model fits for original collision datasets
 mod.sums <- data.frame(c("Wildlife Victoria","","","","","City of Bendigo","","","","","Western District","","","","","Crashstats","","","",""),
@@ -151,6 +124,7 @@ ggplot(tvol, aes(x=x/1000,y=y,ymin=ymin,ymax=ymax,group=id)) +
   scale_x_continuous(breaks=seq(0,40,by=5), expand = c(0, 0), lim=c(0,40))
 dev.off()
 
+
 tspd <- foreach(i = c("o","b","w","c"), .combine=rbind) %do% {
   model <- get(paste0(i,".glm"))
   tspd.range <- seq(40,110,.1)[-c(1,length(seq(40,110,.1)))]
@@ -197,13 +171,8 @@ val.df$coef_err <- as.numeric(val.df$coef_err)
 #plot calibration with varying combinations of data
 png('figs/calib.png', pointsize = 6, res=300, width = 1700, height = 900, bg='transparent')
 ggplot() +
-  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
-  #geom_line(data=val.df, aes(y=,x=)) +
   geom_pointrange(data=val.df, aes(x=id, y=coef, ymin=coef-coef_err, ymax=coef+coef_err), size=0.1) +
-  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
   geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
-  #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
-  #coord_flip() +
   scale_y_continuous(breaks=seq(0.6,1.2,by=.1), expand = c(0, 0), lim=c(0.6,1.2)) +
   ylab("Calibration coefficient") +
   xlab("Data combinations used for modelling & validation") +
@@ -215,13 +184,12 @@ ggplot() +
   theme(text = element_text(size = 10))
 dev.off()
 
-b.data <- bendigo.data
-w.data <- western.data
-c.data <- crashstats.data
+b.data <- read.csv(file = "data/model_data_bendigo.csv")
+w.data <- read.csv(file = "data/model_data_western.csv")
+c.data <- read.csv(file = "data/model_data_crashstats.csv")
 
 yp_bins <- foreach(i = val.df$id, .combine=rbind) %do% {
   y <- eval(parse(text=paste0(strsplit(as.character(i), "-")[[1]][2],".data$coll")))
-  #p <- predict(ob.glm, eval(parse(text=paste0(sub('-', '', i),".glm$data"))), type="response")
   p <- predict(get(paste0(strsplit(as.character(i), "-")[[1]][1],".glm")), eval(parse(text=paste0(strsplit(as.character(i), "-")[[1]][2],".data"))), type="response")
   
   p.b <- .bincode(p,seq(min(p),max(p),(max(p)-min(p))/10),include.lowest = TRUE)
@@ -245,12 +213,7 @@ plotPal <- c("#77B9FF",
 
 png('figs/calib2.png', pointsize = 6, res=300, width = 1300, height = 1000, bg='transparent')
 ggplot() +
-  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
   geom_line(data=yp_bins, aes(y=invcloglog(coef1+coef2*log(p)),x=p, colour=id)) +
-  #geom_pointrange(data=plot.info, aes(x=median_p, y=prop_coll, ymin=prop_lo, ymax=prop_hi), size = 0.2, inherit.aes=FALSE) +
-  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-  #geom_segment(aes(x = 0, y = 0, xend = 0.04, yend = 0.04), linetype=2, size=0.1, inherit.aes=FALSE) +
-  #coord_flip() +
   ylab("Observed Rate (proportion in one year)") +
   xlab("Predicted Rate (proportion in one year)") +
   theme_bw() +
@@ -280,13 +243,7 @@ val.iag.df$dev <- as.numeric(val.iag.df$dev)
 #plot iag calibration and performance with varying combinations of data
 png('figs/calib_iag.png', pointsize = 6, res=300, width = 1700, height = 900, bg='transparent')
 ggplot() +
-  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
-  #geom_line(data=val.df, aes(y=,x=)) +
   geom_point(data=val.iag.df, aes(x=id, y=coef), size=1) +
-  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-  #geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
-  #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
-  #coord_flip() +
   ylab("Calibration coefficient") +
   xlab("Data combinations used for modelling") +
   theme_bw() +
@@ -299,13 +256,7 @@ dev.off()
 
 png('figs/dev_iag.png', pointsize = 6, res=300, width = 1700, height = 900, bg='transparent')
 ggplot() +
-  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
-  #geom_line(data=val.df, aes(y=,x=)) +
   geom_point(data=val.iag.df, aes(x=id, y=dev), size=1) +
-  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-  #geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
-  #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
-  #coord_flip() +
   ylab("Percent reduction in deviance") +
   xlab("Data combinations used for modelling") +
   theme_bw() +
@@ -316,47 +267,7 @@ ggplot() +
   theme(text = element_text(size = 10))
 dev.off()
 
-#######################################################################################
-# 
-# y <- coll.glm$data$y
-# p <- predict(coll.glm, coll.glm$data, type="response")
-# 
-# p.b <- .bincode(p,seq(min(p),max(p),(max(p)-min(p))/10),include.lowest = TRUE)
-# 
-# yp_bins <- data.frame(y,p,p.b)
-# 
-# 
-# plot.info <- ddply(yp_bins, ~p.b, summarise,
-#                    count=length(y),
-#                    prop_coll=sum(y)/length(y),
-#                    prop_nocoll=(length(y)-sum(y))/length(y),
-#                    prop_lo=binom.test(sum(y), length(y), 0.5)$conf.int[1],
-#                    prop_hi=binom.test(sum(y), length(y), 0.5)$conf.int[2],
-#                    median_p=median(p)
-# )
-# 
-# calib <- glm(y~log(p), family=binomial(link=cloglog), data=yp_bins)
-# roc <- roc(y,p)
-# perform.glm <- rbind(calib_int=calib$coefficients[1], calib_slope=calib$coefficients[2], roc)
-# colnames(perform.glm) <- "0.0"
-# 
-# png('figs/calib.png', pointsize = 6, res=300, width = 900, height = 900, bg='transparent')
-# ggplot() +
-#   #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
-#   geom_line(data=yp_bins, aes(y=invcloglog(calib$coefficients[1]+calib$coefficients[2]*log(p)),x=p)) +
-#   geom_pointrange(data=plot.info, aes(x=median_p, y=prop_coll, ymin=prop_lo, ymax=prop_hi), size = 0.2, inherit.aes=FALSE) +
-#   geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-#   geom_segment(aes(x = 0, y = 0, xend = .04, yend = .04), linetype=2, size=0.1, inherit.aes=FALSE) +
-#   #coord_flip() +
-#   ylab("Observed Rate (proportion in one year)") +
-#   xlab("Predicted Rate (proportion in one year)") +
-#   theme_bw() +
-#   theme(plot.margin=unit(c(.5,0,.1,.1),"cm")) +
-#   theme(axis.title.x = element_text(margin=unit(c(.3,0,0,0),"cm"))) +
-#   theme(axis.title.y = element_text(margin=unit(c(0,.3,0,0),"cm"))) +
-#   theme(panel.grid.major = element_line(size=0.1),panel.grid.minor = element_line(size=0.1)) +
-#   theme(text = element_text(size = 10))
-# dev.off()
+#############################################################
 
 #plot results from original glm models using only validation datasets for completion talk
 occ <- foreach(i = c("o","b","w","c"), .combine=rbind) %do% {
@@ -436,13 +347,7 @@ dev.off()
 
 png('/home/casey/Research/Projects/PhD_Thesis/completion_talk/graphics/calib_iag.png', pointsize = 16, res=300, width = 1000, height = 900)
 ggplot() +
-  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
-  #geom_line(data=val.df, aes(y=,x=)) +
   geom_point(data=val.iag.df, aes(x=id, y=coef), size=1) +
-  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-  #geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
-  #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
-  #coord_flip() +
   ylab("CALIBRATION COEFFICIENT") +
   xlab("DATA COMBINATIONS USED FOR MODELLING") +
   theme_bw() +
@@ -455,13 +360,7 @@ dev.off()
 
 png('/home/casey/Research/Projects/PhD_Thesis/completion_talk/graphics/dev_iag.png', pointsize = 16, res=300, width = 1000, height = 900)
 ggplot() +
-  #geom_smooth(data=plot.glm, aes(y=y,x=x), formula=y~log(x), method=glm, size = 0.2, colour='black', inherit.aes=FALSE) +
-  #geom_line(data=val.df, aes(y=,x=)) +
   geom_point(data=val.iag.df, aes(x=id, y=dev), size=1) +
-  #geom_text(data=plot.info, aes(x=median_p, y=prop_coll, label=count),hjust=-0.1, vjust=-1, size = 2.0, inherit.aes=FALSE) +
-  #geom_segment(aes(x = 0, y = 1, xend = Inf, yend = 1), linetype=2, size=0.1) +
-  #geom_segment(aes(x = 0, y = mean(val.df[1:3,2]), xend = Inf, yend = mean(val.df[1:3,2])), linetype=2, size=0.1) +
-  #coord_flip() +
   ylab("PERCENT REDUCTION IN DEVIANCE") +
   xlab("DATA COMBINATIONS USED FOR MODELLING") +
   theme_bw() +
